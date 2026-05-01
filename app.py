@@ -296,6 +296,27 @@ def reactivate_task(task_id):
         conn.commit()
     return jsonify({"ok": True})
 
+
+@app.route("/api/tasks/<int:task_id>/due", methods=["POST", "PATCH"])
+def update_task_due(task_id):
+    data = request.get_json(silent=True) or {}
+    due_date = data.get("due_date") or None
+    due_time = data.get("due_time") or None
+    if due_time == "":
+        due_time = None
+    with get_conn() as conn:
+        row = conn.execute("SELECT id,status FROM tasks WHERE id=?", (task_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "task not found"}), 404
+        if row["status"] != "active":
+            return jsonify({"error": "only active tasks can edit due date"}), 400
+        conn.execute(
+            "UPDATE tasks SET due_date=?, due_time=? WHERE id=?",
+            (due_date, due_time, task_id)
+        )
+        conn.commit()
+    return jsonify({"ok": True, "due_date": due_date, "due_time": due_time})
+
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
     with get_conn() as conn:
@@ -334,5 +355,6 @@ def update_settings():
 
 if __name__ == "__main__":
     init_db()
-    # app.run(host="127.0.0.1", port=5000, debug=True)
+    # app.run(host="127.0.0.1", port=5001, debug=True)
+    # app.run(host="100.97.142.99", port=5001, debug=True)
     app.run(host="100.97.142.99", port=5000, debug=False)

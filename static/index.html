@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.3.6</title>
+<title>醒来先看 v1.3.8</title>
 <script>
 (function(){
   try{
@@ -93,6 +93,9 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
 @media(max-width:560px){
   .today-date-picker{max-width:none}
 }
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:999px;padding:12px 18px;box-shadow:var(--shadow);opacity:0;pointer-events:none;z-index:99999;transition:opacity .22s ease,transform .22s ease;font-weight:700}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+html.dark .toast{background:#2b2533}
 @media(max-width:850px){body{padding:14px}.grid,.biggrid{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}li{align-items:flex-start;flex-direction:column}.toolbar button{width:100%}.topbar{align-items:stretch}}
 </style>
 </head>
@@ -282,7 +285,7 @@ function reactivateButton(x){
 }
 function listCompleted(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.title)} ${archiveBadge(x)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""} · ${archiveMeta(x)}</div></div><div class="toolbar">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有归档的 DDL。")}
 function listActive(el,arr){
-  el.innerHTML=arr.length?arr.map(x=>`<li class="active-task" data-task-id="${x.id}"><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有未完成 DDL。少一个怪，真好。")
+  el.innerHTML=arr.length?arr.map(x=>`<li class="active-task" data-task-id="${x.id}"><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有未完成 DDL。少一个怪，真好。")
 }
 let archiveReloading=false;
 function refreshCountdowns(){
@@ -330,10 +333,48 @@ $("todayDate").value=localISO();
 $("todayBtn").onclick=()=>load(localISO());
 $("themeBtn").onclick=async()=>saveSettings({theme:document.documentElement.classList.contains("dark")?"light":"dark"});
 $("addDoneBtn").onclick=async()=>{const text=$("doneInput").value.trim();if(!text)return;await api("/api/done",{method:"POST",body:JSON.stringify({text,done_date:$("todayDate").value})});$("doneInput").value="";await load()};
-$("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load()};
+$("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();alert("已保存给明天的留言喵")};
 $("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
 $("testReminderBtn").onclick=()=>showReminder(true);
+let toastTimer=null;
+function showToast(msg){
+  const el=$("toast");
+  if(!el)return;
+  el.textContent=msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove("show"),1800);
+}
+
+
+async function askDueEdit(btn){
+  const title=btn.dataset.editTitle||"这个任务";
+  const oldDate=btn.dataset.editDueDate||"";
+  const oldTime=btn.dataset.editDueTime||"";
+  const datePrompt=`修改「${title}」的截止日期：\n格式：YYYY-MM-DD\n留空可以清除 DDL`;
+  const dueDate=prompt(datePrompt,oldDate);
+  if(dueDate===null)return null;
+  const dateText=dueDate.trim();
+  if(dateText===""){
+    const ok=confirm("确定清除这个任务的截止日期/时间吗？\n清除后它会留在待办里，但不再按 DDL 倒计时。");
+    if(!ok)return null;
+    return {due_date:null,due_time:null};
+  }
+  if(!isValidDateStr(dateText)){
+    alert("日期格式不对喵。请用 YYYY-MM-DD，比如 2026-05-03。");
+    return null;
+  }
+  const dueTime=prompt("修改截止时间，可留空：\n格式：HH:MM，比如 23:59",oldTime);
+  if(dueTime===null)return null;
+  const timeText=dueTime.trim();
+  if(!isValidTimeStr(timeText)){
+    alert("时间格式不对喵。请用 HH:MM，比如 23:59，或者留空。");
+    return null;
+  }
+  return {due_date:dateText,due_time:timeText||null};
+}
+
 document.body.onclick=async e=>{
   const btn=e.target.closest("button");
   if(!btn)return;
@@ -341,6 +382,7 @@ document.body.onclick=async e=>{
   const taskId=btn.dataset.deleteTask;
   const completeId=btn.dataset.completeTask;
   const reactivateId=btn.dataset.reactivateTask;
+  const editDueId=btn.dataset.editDueTask;
   if(doneId){
     if(confirm("确定删除这条完成记录吗？")){
       await api(`/api/done/${doneId}`,{method:"DELETE"});
@@ -356,6 +398,13 @@ document.body.onclick=async e=>{
   if(completeId){
     await api(`/api/tasks/${completeId}/complete`,{method:"POST",body:JSON.stringify({completed_date:$("todayDate").value})});
     await load();
+  }
+  if(editDueId){
+    const due=await askDueEdit(btn);
+    if(!due)return;
+    await api(`/api/tasks/${editDueId}/due`,{method:"POST",body:JSON.stringify(due)});
+    await load();
+    showToast("DDL 已修改喵");
   }
   if(reactivateId){
     const due=await askNewDueForReactivation(btn);
@@ -462,5 +511,6 @@ setInterval(refreshCountdowns,30000);
   </div>
 </div>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
