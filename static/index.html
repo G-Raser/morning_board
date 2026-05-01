@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.4.1</title>
+<title>醒来先看 v1.4.4</title>
 <script>
 (function(){
   try{
@@ -58,7 +58,7 @@ html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a1
 
 .progress-wrap{width:100%;min-width:180px;margin-top:8px}
 .progress-track{height:8px;border-radius:999px;background:var(--accent2);overflow:hidden;border:1px solid var(--line)}
-.progress-fill{height:100%;border-radius:999px;background:var(--accent);transition:width .25s ease}
+.progress-fill{height:100%;border-radius:999px;background:var(--accent);transition:width 1s linear;will-change:width}
 .progress-meta{font-size:12px;color:var(--muted);margin-top:4px}
 .input-picker{position:relative;flex:1;min-width:150px}
 .input-picker input{width:100%;padding-right:52px}
@@ -109,6 +109,13 @@ html.dark .toast{background:#2b2533}
 .modal-actions button{min-width:96px}
 .modal-danger-title{color:var(--red-text)}
 html.dark .cat-modal{background:var(--card)}
+.cat-modal .input-picker{width:100%;min-width:0}
+.cat-modal .input-picker input{width:100%;padding-right:52px}
+.cat-modal .picker-btn{color:var(--text);background:var(--accent2);box-shadow:0 0 8px rgba(0,0,0,.12)}
+html.dark .cat-modal .picker-btn{color:#f4efe8;background:#4a3b52;filter:drop-shadow(0 0 3px rgba(255,255,255,.35))}
+html.dark .cat-modal .picker-btn:hover{background:#5b4964}
+.cat-modal input[type="date"]::-webkit-calendar-picker-indicator,
+.cat-modal input[type="time"]::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
 @media(max-width:850px){body{padding:14px}.grid,.biggrid{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}li{align-items:flex-start;flex-direction:column}.toolbar button{width:100%}.topbar{align-items:stretch}}
 </style>
 </head>
@@ -347,7 +354,7 @@ $("todayBtn").onclick=()=>load(localISO());
 $("themeBtn").onclick=async()=>saveSettings({theme:document.documentElement.classList.contains("dark")?"light":"dark"});
 $("addDoneBtn").onclick=async()=>{const text=$("doneInput").value.trim();if(!text)return;await api("/api/done",{method:"POST",body:JSON.stringify({text,done_date:$("todayDate").value})});$("doneInput").value="";await load()};
 $("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
-$("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();alert("已保存给明天的留言喵")};
+$("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();showToast("已保存给明天喵")};
 $("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
 $("testReminderBtn").onclick=()=>showReminder(true);
 let toastTimer=null;
@@ -390,7 +397,12 @@ function openCatModal({title,message="",fields=[],okText="确定",cancelText="�
   $("catModalOk").textContent=okText;
   $("catModalCancel").textContent=cancelText;
   $("catModalFields").innerHTML=fields.map(f=>{
-    if(f.type==="date"||f.type==="time"||f.type==="text"){
+    if(f.type==="date"||f.type==="time"){
+      const icon=f.type==="date"?"📅":"⏰";
+      const aria=f.type==="date"?"选择日期":"选择时间";
+      return `<label>${escapeHtml(f.label||"")}<div class="input-picker modal-picker"><input id="${escapeHtml(f.id)}" type="${f.type}" value="${escapeHtml(f.value||"")}" ${f.required?"required":""}><button type="button" class="picker-btn" data-picker="${escapeHtml(f.id)}" aria-label="${aria}">${icon}</button></div></label>`;
+    }
+    if(f.type==="text"){
       return `<label>${escapeHtml(f.label||"")}<input id="${escapeHtml(f.id)}" type="${f.type}" value="${escapeHtml(f.value||"")}" ${f.required?"required":""}></label>`;
     }
     if(f.type==="checkbox"){
@@ -567,7 +579,7 @@ document.addEventListener("click",e=>{
 window.addEventListener("DOMContentLoaded",()=>{
   bindCatModal();
   load(localISO()).catch(err=>alert("加载失败："+err.message));
-  setInterval(refreshCountdowns,30000);
+  setInterval(refreshCountdowns,1000);
 });
 </script>
 

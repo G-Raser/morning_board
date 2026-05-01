@@ -101,9 +101,61 @@ morning_board.db
 
 也就是说数据库不会被提交到仓库，避免把私人记录或测试脏数据传上去。
 
+## 调整 DDL 进度条刷新频率
+
+DDL 进度条和倒计时的刷新频率在 `static/index.html` 里设置。
+
+找到这一行：
+
+```js
+setInterval(refreshCountdowns,1000);
+```
+
+这里的 `1000` 是毫秒，也就是 1 秒。
+
+常见设置：
+
+```js
+setInterval(refreshCountdowns,1000); // 每 1 秒更新一次，最平滑
+setInterval(refreshCountdowns,3000); // 每 3 秒更新一次，比较省资源
+setInterval(refreshCountdowns,5000); // 每 5 秒更新一次，更省资源
+```
+
+如果你修改了刷新间隔，建议同时调整进度条动画时间。
+
+在 `static/index.html` 里找到：
+
+```css
+.progress-fill{
+  height:100%;
+  border-radius:999px;
+  background:var(--accent);
+  transition:width 1s linear;
+  will-change:width
+}
+```
+
+如果刷新间隔改成 3 秒，可以配套改成：
+
+```css
+transition:width 3s linear;
+```
+
+推荐组合：
+
+```js
+setInterval(refreshCountdowns,3000);
+```
+
+```css
+transition:width 3s linear;
+```
+
+这样进度条会每 3 秒计算一次，并用 3 秒平滑滑过去，手机端会比每秒刷新更省一点。
+
 ## 当前版本
 
-当前版本：`v1.3.8`
+当前版本：`v1.4.4`
 
 主要功能：
 
@@ -116,7 +168,8 @@ morning_board.db
 - DDL 到期自动归档为“过期”
 - 完成 DDL 自动归档为“完成”
 - 归档任务可重新启动 / 继续处理
-- 未完成 DDL 可修改截止日期和时间
+- 未完成 DDL 可用猫猫自定义弹窗修改截止日期和时间
+- 重新启动 / 继续处理任务时可用自定义弹窗选择日期和时间
 - 手机端可通过 Tailscale 访问
 - 每日提醒和测试提醒
 - toast 轻提示
