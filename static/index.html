@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.2.7</title>
+<title>醒来先看 v1.3.6</title>
 <script>
 (function(){
   try{
@@ -88,6 +88,11 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
 @media(max-width:560px){
   .ddl-row{grid-template-columns:1fr}
 }
+.today-date-picker{max-width:420px;width:100%}
+.today-date-picker input{font-size:18px;font-variant-numeric:tabular-nums}
+@media(max-width:560px){
+  .today-date-picker{max-width:none}
+}
 @media(max-width:850px){body{padding:14px}.grid,.biggrid{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}li{align-items:flex-start;flex-direction:column}.toolbar button{width:100%}.topbar{align-items:stretch}}
 </style>
 </head>
@@ -101,7 +106,10 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
       <p>上面接住今天，下面投喂明天。不要靠脑子硬加载人生喵。</p>
     </div>
     <div class="row">
-      <label>今天日期<input id="todayDate" type="date"></label>
+      <label>今天日期<div class="input-picker today-date-picker">
+          <input id="todayDate" type="date" aria-label="今天日期">
+          <button type="button" class="picker-btn" data-picker="todayDate" aria-label="选择今天日期">📅</button>
+        </div></label>
       <button class="light" id="todayBtn">回到今天</button>
       <button class="light" id="themeBtn">切换亮/暗</button>
       <button class="light" id="copyBtn">复制今日存档</button>
@@ -121,7 +129,7 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
     <div class="card white">
       <h3>昨天已经完成</h3>
       <ul id="yesterdayDoneList"></ul>
-      <h3 style="margin-top:16px">昨天完成的 DDL</h3>
+      <h3 style="margin-top:16px">昨天归档的 DDL</h3>
       <ul id="yesterdayCompletedList"></ul>
     </div>
     <div class="card white">
@@ -149,7 +157,7 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
         <button id="addDoneBtn">记录完成</button>
       </div>
       <ul id="todayDoneList"></ul>
-      <h3 style="margin-top:16px">今天完成的 DDL</h3>
+      <h3 style="margin-top:16px">今天归档的 DDL</h3>
       <ul id="todayCompletedList"></ul>
     </div>
     <div class="card white">
@@ -259,13 +267,33 @@ async function load(date){const d=date||$("todayDate").value||localISO();state=a
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function empty(text){return `<li><div class="empty">${text}</div></li>`}
 function listDone(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.text)}</div><div class="task-meta">${escapeHtml(x.created_at||"")}</div></div><button class="danger" data-delete-done="${x.id}">删除</button></li>`).join(""):empty("这里还空着。空着也不算失败喵。")}
-function listCompleted(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""} · 完成于：${escapeHtml(x.completed_at||"")}</div></div><div class="toolbar"><button class="light" data-reactivate-task="${x.id}">撤回</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有完成的 DDL。")}
+function archiveMeta(x){
+  if(x.status==="expired")return `已过期归档：${escapeHtml(x.archived_at||"")}`;
+  return `完成于：${escapeHtml(x.completed_at||x.archived_at||"")}`;
+}
+function archiveBadge(x){
+  if(x.status==="expired")return '<span class="badge late">过期</span>';
+  return '<span class="badge ok">完成</span>';
+}
+function reactivateButton(x){
+  const status=x.status==="completed"?"completed":"expired";
+  const label=status==="completed"?"重新启动任务":"继续处理";
+  return `<button class="light" data-reactivate-task="${x.id}" data-reactivate-status="${status}" data-reactivate-title="${escapeHtml(x.title)}" data-reactivate-due-date="${escapeHtml(x.due_date||"")}" data-reactivate-due-time="${escapeHtml(x.due_time||"")}">${label}</button>`;
+}
+function listCompleted(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.title)} ${archiveBadge(x)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""} · ${archiveMeta(x)}</div></div><div class="toolbar">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有归档的 DDL。")}
 function listActive(el,arr){
   el.innerHTML=arr.length?arr.map(x=>`<li class="active-task" data-task-id="${x.id}"><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有未完成 DDL。少一个怪，真好。")
 }
+let archiveReloading=false;
 function refreshCountdowns(){
   if(!state?.active_tasks)return;
   for(const task of state.active_tasks){
+    const target=dueDateObj(task);
+    if(target && target<new Date() && !archiveReloading){
+      archiveReloading=true;
+      load($("todayDate").value).finally(()=>archiveReloading=false);
+      return;
+    }
     const row=document.querySelector(`.active-task[data-task-id="${task.id}"]`);
     if(!row)continue;
     const badge=row.querySelector(".countdown");
@@ -306,7 +334,36 @@ $("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!ti
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();alert("已保存给明天的留言喵")};
 $("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
 $("testReminderBtn").onclick=()=>showReminder(true);
-document.body.onclick=async e=>{const doneId=e.target.dataset.deleteDone,taskId=e.target.dataset.deleteTask,completeId=e.target.dataset.completeTask,reactivateId=e.target.dataset.reactivateTask;if(doneId){if(confirm("确定删除这条完成记录吗？")){await api(`/api/done/${doneId}`,{method:"DELETE"});await load()}}if(taskId){if(confirm("确定彻底删除这个任务吗？这会从历史里消失。")){await api(`/api/tasks/${taskId}`,{method:"DELETE"});await load()}}if(completeId){await api(`/api/tasks/${completeId}/complete`,{method:"POST",body:JSON.stringify({completed_date:$("todayDate").value})});await load()}if(reactivateId){await api(`/api/tasks/${reactivateId}/reactivate`,{method:"POST"});await load()}};
+document.body.onclick=async e=>{
+  const btn=e.target.closest("button");
+  if(!btn)return;
+  const doneId=btn.dataset.deleteDone;
+  const taskId=btn.dataset.deleteTask;
+  const completeId=btn.dataset.completeTask;
+  const reactivateId=btn.dataset.reactivateTask;
+  if(doneId){
+    if(confirm("确定删除这条完成记录吗？")){
+      await api(`/api/done/${doneId}`,{method:"DELETE"});
+      await load();
+    }
+  }
+  if(taskId){
+    if(confirm("确定彻底删除这个任务吗？这会从历史里消失。")){
+      await api(`/api/tasks/${taskId}`,{method:"DELETE"});
+      await load();
+    }
+  }
+  if(completeId){
+    await api(`/api/tasks/${completeId}/complete`,{method:"POST",body:JSON.stringify({completed_date:$("todayDate").value})});
+    await load();
+  }
+  if(reactivateId){
+    const due=await askNewDueForReactivation(btn);
+    if(!due)return;
+    await api(`/api/tasks/${reactivateId}/reactivate`,{method:"POST",body:JSON.stringify(due)});
+    await load();
+  }
+};
 
 async function copyTextWithFallback(text){
   try{
@@ -322,7 +379,7 @@ async function copyTextWithFallback(text){
     setTimeout(()=>{$("copyText").focus();$("copyText").select()},50);
   }
 }
-$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"","还没完成的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
+$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
 $("todayDate").onchange=()=>load($("todayDate").value);
 
 function bindCopyModal(){
@@ -335,6 +392,48 @@ function bindCopyModal(){
   modal.onclick=e=>{if(e.target.id==="copyModal")modal.classList.remove("show")};
 }
 window.addEventListener("DOMContentLoaded",bindCopyModal);
+
+function isValidDateStr(s){return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(s+"T00:00").getTime())}
+function isValidTimeStr(s){return s==="" || /^([01]\d|2[0-3]):[0-5]\d$/.test(s)}
+function reactivateDueTarget(btn){
+  const dueDate=btn.dataset.reactivateDueDate||"";
+  const dueTime=btn.dataset.reactivateDueTime||"";
+  if(!dueDate)return null;
+  const t={due_date:dueDate,due_time:dueTime||null};
+  return dueDateObj(t);
+}
+async function askNewDueForReactivation(btn){
+  const status=btn.dataset.reactivateStatus;
+  const title=btn.dataset.reactivateTitle||"这个任务";
+  const target=reactivateDueTarget(btn);
+  const oldDueText=(btn.dataset.reactivateDueDate||"")+(btn.dataset.reactivateDueTime?` ${btn.dataset.reactivateDueTime}`:"");
+  if(status==="completed"){
+    const keepOldDue=target && target>=new Date();
+    const msg=keepOldDue
+      ? `「${title}」已经完成了，确定要重新启动吗？\n原截止时间还没过，将保留：${oldDueText}\n如果只是手误，请点取消。`
+      : `「${title}」已经完成了，确定要重新启动吗？\n原截止时间已过或不存在，接下来需要设置新的 DDL。\n如果只是手误，请点取消。`;
+    const ok=confirm(msg);
+    if(!ok)return null;
+    if(keepOldDue)return {};
+  }
+  const defaultDate=localISO();
+  const dueDate=prompt("给这个任务设置新的截止日期：\n格式：YYYY-MM-DD",defaultDate);
+  if(dueDate===null)return null;
+  const dateText=dueDate.trim();
+  if(!isValidDateStr(dateText)){
+    alert("日期格式不对喵。请用 YYYY-MM-DD，比如 2026-05-03。");
+    return null;
+  }
+  const dueTime=prompt("新的截止时间，可留空：\n格式：HH:MM，比如 23:59","");
+  if(dueTime===null)return null;
+  const timeText=dueTime.trim();
+  if(!isValidTimeStr(timeText)){
+    alert("时间格式不对喵。请用 HH:MM，比如 23:59，或者留空。");
+    return null;
+  }
+  return {due_date:dateText,due_time:timeText||null};
+}
+
 document.addEventListener("click",e=>{
   const btn=e.target.closest("[data-picker]");
   if(!btn)return;
