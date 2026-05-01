@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>醒来先看 v1.1.1</title>
+<script>
+(function(){
+  try{
+    if(localStorage.getItem("morning-board-theme")==="dark"){
+      document.documentElement.classList.add("dark");
+    }
+  }catch(e){}
+})();
+</script>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f7f3ec;--card:#fffaf3;--card2:#fff;--text:#24211c;--muted:#7a7166;--line:#e8dccb;--accent:#6d4c2f;--accent2:#f0dfc7;--danger-bg:#fee2e2;--danger:#991b1b;--good:#166534;--shadow:0 8px 24px rgba(70,45,20,.08)}
+html.dark{--bg:#17151b;--card:#24212b;--card2:#1f1c25;--text:#f4efe7;--muted:#b9ad9f;--line:#3a3443;--accent:#d6b48c;--accent2:#403444;--danger-bg:#4a2025;--danger:#fecaca;--good:#86efac;--shadow:0 8px 24px rgba(0,0,0,.28)}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:24px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:20px;box-shadow:var(--shadow)}
+.card.white{background:var(--card2)}
+.hero{display:grid;gap:12px}
+h1,h2,h3{margin:0}h1{font-size:31px;letter-spacing:-.02em}h2{font-size:22px}h3{font-size:16px;color:var(--muted)}
+p{margin:6px 0;color:var(--muted)}
+.topbar{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.row{display:flex;gap:9px;margin-top:10px;align-items:end}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.biggrid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.kicker{font-size:13px;color:var(--muted);font-weight:650;letter-spacing:.02em}
+input,textarea,button{font:inherit;border-radius:14px;border:1px solid var(--line);padding:10px 12px}
+input,textarea{width:100%;background:var(--card2);color:var(--text)}
+input[type=checkbox]{width:auto;transform:scale(1.16)}
+textarea{min-height:96px;resize:vertical;line-height:1.45}
+button{cursor:pointer;background:var(--accent);color:white;border:none;white-space:nowrap}
+button.light{background:var(--accent2);color:var(--text);border:1px solid var(--line)}
+button.danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(180,70,70,.18)}
+button.good{background:#166534;color:white}
+html.dark button.good{background:#15803d}
+ul{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+li{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:17px;padding:12px;background:var(--card2)}
+.task-main{min-width:0}.task-title{font-weight:700;word-break:break-word}.task-meta{font-size:13px;color:var(--muted);margin-top:4px}
+.badge{display:inline-block;border-radius:999px;padding:6px 10px;font-size:13px;white-space:nowrap}
+.ok{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.urgent{background:#ffedd5;color:#9a3412}.late{background:#fee2e2;color:#991b1b}.none{background:#f4f4f5;color:#52525b}
+html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a16;color:#fde68a}html.dark .urgent{background:#4a2812;color:#fdba74}html.dark .late{background:#4a2025;color:#fecaca}html.dark .none{background:#332f3a;color:#d4d4d8}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.muted{color:var(--muted);font-size:14px}.tiny{font-size:12px;color:var(--muted)}
+.notice{background:var(--card2);border:1px dashed var(--line);border-radius:18px;padding:12px;color:var(--muted);font-size:14px}
+.panel-label{border-radius:999px;background:var(--accent2);padding:6px 10px;font-size:13px;color:var(--text)}
+.focus-box{border-left:5px solid var(--accent);background:var(--card2);padding:14px;border-radius:18px;color:var(--text)}
+.empty{color:var(--muted);font-size:14px}
+
+.copy-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+.copy-modal.show{display:flex}
+.copy-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;max-width:760px;width:100%;box-shadow:var(--shadow)}
+.copy-card textarea{min-height:260px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
+@media(max-width:850px){body{padding:14px}.grid,.biggrid{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}li{align-items:flex-start;flex-direction:column}.toolbar button{width:100%}.topbar{align-items:stretch}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="card hero">
+  <div class="topbar">
+    <div>
+      <div class="kicker">猫猫开机存档板</div>
+      <h1>醒来先看</h1>
+      <p>上面接住今天，下面投喂明天。不要靠脑子硬加载人生喵。</p>
+    </div>
+    <div class="row">
+      <label>今天日期<input id="todayDate" type="date"></label>
+      <button class="light" id="todayBtn">回到今天</button>
+      <button class="light" id="themeBtn">切换亮/暗</button>
+      <button class="light" id="copyBtn">复制今日存档</button>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div>
+      <span class="panel-label">上板</span>
+      <h2>昨天写给今天看的</h2>
+      <p>早上先看这里：昨天做完了什么、今天哪些 DDL 在靠近、昨晚留了什么话。</p>
+    </div>
+  </div>
+  <div class="biggrid">
+    <div class="card white">
+      <h3>昨天已经完成</h3>
+      <ul id="yesterdayDoneList"></ul>
+      <h3 style="margin-top:16px">昨天完成的 DDL</h3>
+      <ul id="yesterdayCompletedList"></ul>
+    </div>
+    <div class="card white">
+      <h3>昨晚留给今天的话</h3>
+      <div id="yesterdayNote" class="focus-box">还没有留言。今晚可以给明天的自己留一条喵。</div>
+      <h3 style="margin-top:16px">今天需要注意的 DDL</h3>
+      <ul id="activeTaskList"></ul>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <div>
+      <span class="panel-label">下板</span>
+      <h2>今天写给明天看的</h2>
+      <p>晚上填这里：今天做了什么，明天醒来要先看什么。写短一点就好。</p>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card white">
+      <h3>今天已经完成</h3>
+      <div class="row">
+        <input id="doneInput" placeholder="比如：洗澡、交作业、买台灯">
+        <button id="addDoneBtn">记录完成</button>
+      </div>
+      <ul id="todayDoneList"></ul>
+      <h3 style="margin-top:16px">今天完成的 DDL</h3>
+      <ul id="todayCompletedList"></ul>
+    </div>
+    <div class="card white">
+      <h3>写给明天的猫猫留言</h3>
+      <textarea id="tomorrowNoteInput" placeholder="比如：明早别先看邮件。先看 A2 Q3，然后喝水。"></textarea>
+      <div class="toolbar">
+        <button id="saveNoteBtn">保存给明天</button>
+      </div>
+      <h3 style="margin-top:16px">新增 DDL</h3>
+      <div class="row">
+        <input id="taskTitle" placeholder="事项">
+        <input id="taskDue" type="date">
+        <input id="taskTime" type="time">
+        <input id="taskNote" placeholder="备注，可空">
+        <button id="addTaskBtn">添加</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>每日提醒</h2>
+  <p class="muted">到点提醒你更新“今天写给明天看的”这一板。浏览器页面开着最稳。</p>
+  <div class="row">
+    <label style="flex:1">提醒时间<input id="reminderTime" type="time"></label>
+    <label class="row" style="margin:0"><input id="reminderEnabled" type="checkbox"> 开启每日提醒</label>
+    <button id="saveReminderBtn">保存提醒</button>
+    <button class="light" id="testReminderBtn">测试提醒</button>
+  </div>
+  <div class="notice">提醒依赖浏览器通知：电脑要开着，后端要运行，浏览器要允许通知。更强提醒可以再配系统日历/任务计划。</div>
+</section>
+
+<div class="tiny" style="text-align:center">数据保存在 SQLite 数据库 morning_board.db。备份这个文件就能备份存档。</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);let state={};
+function localISO(d=new Date()){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
+const nowHHMM=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+function dueDateObj(t){
+  if(!t?.due_date)return null;
+  const [y,m,d]=t.due_date.split("-").map(Number);
+  if(t.due_time){
+    const [hh,mm]=t.due_time.split(":").map(Number);
+    return new Date(y,m-1,d,hh||0,mm||0,0,0);
+  }
+  return new Date(y,m-1,d,23,59,59,999);
+}
+function dueLabel(t){
+  if(!t?.due_date)return"截止：未定";
+  return `截止：${t.due_date}${t.due_time?` ${t.due_time}`:""}`;
+}
+function daysUntilTask(t){
+  const target=dueDateObj(t);if(!target)return null;
+  const [cy,cm,cd]=localISO().split("-").map(Number);
+  const current=new Date(cy,cm-1,cd);
+  return Math.floor((target-current)/86400000);
+}
+function urgencyText(t){
+  const target=dueDateObj(t);if(!target)return"未定";
+  const now=new Date();const diff=target-now;
+  const mins=Math.round(diff/60000);
+  const days=daysUntilTask(t);
+  if(mins<0){
+    const overdue=Math.abs(mins);
+    if(overdue<60)return`已过期 ${overdue} 分钟`;
+    if(overdue<1440)return`已过期 ${Math.floor(overdue/60)}小时${overdue%60?` ${overdue%60}分钟`:""}`;
+    return`已过期 ${Math.ceil(overdue/1440)} 天`;
+  }
+  if(mins<60)return`${mins} 分钟后`;
+  if(mins<1440)return`${Math.floor(mins/60)}小时${mins%60?` ${mins%60}分钟`:"后"}`;
+  if(days===0)return t.due_time?`今天 ${t.due_time} 截止`:"今天截止";
+  if(days===1)return t.due_time?`明天 ${t.due_time} 截止`:"明天截止";
+  return`${days} 天后`;
+}
+function badgeClass(t){const target=dueDateObj(t);if(!target)return"badge none";const mins=Math.round((target-new Date())/60000);if(mins<0)return"badge late";if(mins<=1440)return"badge urgent";if(mins<=4320)return"badge soon";return"badge ok"};
+async function api(path,options={}){const res=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!res.ok)throw new Error(await res.text()||"Request failed");return res.json()}
+async function load(date){const d=date||$("todayDate").value||localISO();state=await api(`/api/state?date=${encodeURIComponent(d)}`);render()}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function empty(text){return `<li><div class="empty">${text}</div></li>`}
+function listDone(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.text)}</div><div class="task-meta">${escapeHtml(x.created_at||"")}</div></div><button class="danger" data-delete-done="${x.id}">删除</button></li>`).join(""):empty("这里还空着。空着也不算失败喵。")}
+function listCompleted(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""} · 完成于：${escapeHtml(x.completed_at||"")}</div></div><div class="toolbar"><button class="light" data-reactivate-task="${x.id}">撤回</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有完成的 DDL。")}
+function listActive(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div></div><span class="${badgeClass(x)}">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有未完成 DDL。少一个怪，真好。")}
+function render(){
+$("todayDate").value=state.today||localISO();
+document.documentElement.classList.toggle("dark",state.theme==="dark");
+try{localStorage.setItem("morning-board-theme",state.theme||"light")}catch(e){}
+$("reminderEnabled").checked=state.reminder_enabled==="1";$("reminderTime").value=state.reminder_time||"22:30";
+$("tomorrowNoteInput").value=state.today_note?.tomorrow_note||"";
+$("yesterdayNote").textContent=state.yesterday_note?.tomorrow_note||"还没有留言。今晚可以给明天的自己留一条喵。";
+listDone($("yesterdayDoneList"),state.yesterday_done||[]);
+listDone($("todayDoneList"),state.today_done||[]);
+listCompleted($("yesterdayCompletedList"),state.yesterday_completed_tasks||[]);
+listCompleted($("todayCompletedList"),state.today_completed_tasks||[]);
+listActive($("activeTaskList"),state.active_tasks||[]);
+}
+async function saveSettings(patch){await api("/api/settings",{method:"POST",body:JSON.stringify(patch)});await load()}
+async function requestNotifyPermission(){if(!("Notification" in window))return false;if(Notification.permission==="granted")return true;if(Notification.permission!=="denied"){const p=await Notification.requestPermission();return p==="granted"}return false}
+async function showReminder(test=false){const title=test?"测试提醒：该投喂明天了":"该写给明天的自己了";const body="简单写：今天做完了什么，明天先看什么。两行也算胜利喵。";if(await requestNotifyPermission()){new Notification(title,{body})}else{alert(title+"\\n"+body)}}
+function checkReminder(){if(state.reminder_enabled!=="1")return;const t=state.reminder_time||"22:30";if(nowHHMM()!==t)return;const key=`reminded-${localISO()}-${t}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");showReminder(false)}
+setInterval(checkReminder,30000);
+$("todayDate").value=localISO();
+$("todayBtn").onclick=()=>load(localISO());
+$("themeBtn").onclick=async()=>saveSettings({theme:document.documentElement.classList.contains("dark")?"light":"dark"});
+$("addDoneBtn").onclick=async()=>{const text=$("doneInput").value.trim();if(!text)return;await api("/api/done",{method:"POST",body:JSON.stringify({text,done_date:$("todayDate").value})});$("doneInput").value="";await load()};
+$("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load()};
+$("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();alert("已保存给明天的留言喵")};
+$("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
+$("testReminderBtn").onclick=()=>showReminder(true);
+document.body.onclick=async e=>{const doneId=e.target.dataset.deleteDone,taskId=e.target.dataset.deleteTask,completeId=e.target.dataset.completeTask,reactivateId=e.target.dataset.reactivateTask;if(doneId){if(confirm("确定删除这条完成记录吗？")){await api(`/api/done/${doneId}`,{method:"DELETE"});await load()}}if(taskId){if(confirm("确定彻底删除这个任务吗？这会从历史里消失。")){await api(`/api/tasks/${taskId}`,{method:"DELETE"});await load()}}if(completeId){await api(`/api/tasks/${completeId}/complete`,{method:"POST",body:JSON.stringify({completed_date:$("todayDate").value})});await load()}if(reactivateId){await api(`/api/tasks/${reactivateId}/reactivate`,{method:"POST"});await load()}};
+
+async function copyTextWithFallback(text){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      alert("已复制今日存档喵");
+      return;
+    }
+    throw new Error("clipboard unavailable");
+  }catch(e){
+    $("copyText").value=text;
+    $("copyModal").classList.add("show");
+    setTimeout(()=>{$("copyText").focus();$("copyText").select()},50);
+  }
+}
+$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"","还没完成的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
+$("todayDate").onchange=()=>load($("todayDate").value);
+
+function bindCopyModal(){
+  const closeBtn=$("closeCopyModal");
+  const selectBtn=$("selectCopyText");
+  const modal=$("copyModal");
+  if(!closeBtn||!selectBtn||!modal)return;
+  closeBtn.onclick=()=>modal.classList.remove("show");
+  selectBtn.onclick=()=>{$("copyText").focus();$("copyText").select()};
+  modal.onclick=e=>{if(e.target.id==="copyModal")modal.classList.remove("show")};
+}
+window.addEventListener("DOMContentLoaded",bindCopyModal);
+load(localISO()).catch(err=>alert("加载失败："+err.message));
+</script>
+
+<div id="copyModal" class="copy-modal">
+  <div class="copy-card">
+    <h2>手动复制今日存档</h2>
+    <p class="muted">浏览器不允许自动写入剪贴板时，就从这里长按/全选复制喵。</p>
+    <textarea id="copyText" readonly></textarea>
+    <div class="toolbar">
+      <button id="selectCopyText">全选文本</button>
+      <button class="light" id="closeCopyModal">关闭</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
