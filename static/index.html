@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.2.0</title>
+<title>醒来先看 v1.2.7</title>
 <script>
 (function(){
   try{
@@ -60,6 +60,34 @@ html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a1
 .progress-track{height:8px;border-radius:999px;background:var(--accent2);overflow:hidden;border:1px solid var(--line)}
 .progress-fill{height:100%;border-radius:999px;background:var(--accent);transition:width .25s ease}
 .progress-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.input-picker{position:relative;flex:1;min-width:150px}
+.input-picker input{width:100%;padding-right:52px}
+.input-picker input::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
+.picker-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:2}
+.picker-btn:hover{background:var(--accent2)}
+html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,255,.25))}
+.date-picker{flex:1.8 1 230px;min-width:220px}
+.time-picker{flex:1.35 1 180px;min-width:170px}
+.date-picker input,.time-picker input{font-variant-numeric:tabular-nums}
+#taskDue,#taskTime{font-size:17px}
+@media(max-width:520px){
+  .date-picker{min-width:210px}
+  .time-picker{min-width:160px}
+  #taskDue,#taskTime{font-size:16px}
+}
+.bottom-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:18px;align-items:start}
+.bottom-grid>.card{min-width:0;width:100%}
+.ddl-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;align-items:stretch}
+.ddl-row input,.ddl-row .input-picker,.ddl-row button{min-height:48px}
+.ddl-row .input-picker{width:100%;min-width:0}
+.ddl-row .task-title-input,.ddl-row .task-note-input{min-width:0;width:100%}
+.ddl-row .add-task-btn{grid-column:1 / -1;min-height:48px}
+@media(max-width:900px){
+  .bottom-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:560px){
+  .ddl-row{grid-template-columns:1fr}
+}
 @media(max-width:850px){body{padding:14px}.grid,.biggrid{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}li{align-items:flex-start;flex-direction:column}.toolbar button{width:100%}.topbar{align-items:stretch}}
 </style>
 </head>
@@ -113,7 +141,7 @@ html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a1
       <p>晚上填这里：今天做了什么，明天醒来要先看什么。写短一点就好。</p>
     </div>
   </div>
-  <div class="grid">
+  <div class="grid bottom-grid">
     <div class="card white">
       <h3>今天已经完成</h3>
       <div class="row">
@@ -131,12 +159,18 @@ html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a1
         <button id="saveNoteBtn">保存给明天</button>
       </div>
       <h3 style="margin-top:16px">新增 DDL</h3>
-      <div class="row">
-        <input id="taskTitle" placeholder="事项">
-        <input id="taskDue" type="date">
-        <input id="taskTime" type="time">
-        <input id="taskNote" placeholder="备注，可空">
-        <button id="addTaskBtn">添加</button>
+      <div class="ddl-row">
+        <input id="taskTitle" class="task-title-input" placeholder="事项">
+        <div class="input-picker date-picker">
+          <input id="taskDue" type="date" aria-label="截止日期">
+          <button type="button" class="picker-btn" data-picker="taskDue" aria-label="选择截止日期">📅</button>
+        </div>
+        <div class="input-picker time-picker">
+          <input id="taskTime" type="time" aria-label="截止时间">
+          <button type="button" class="picker-btn" data-picker="taskTime" aria-label="选择截止时间">⏰</button>
+        </div>
+        <input id="taskNote" class="task-note-input" placeholder="备注，可空">
+        <button id="addTaskBtn" class="add-task-btn">添加</button>
       </div>
     </div>
   </div>
@@ -301,6 +335,18 @@ function bindCopyModal(){
   modal.onclick=e=>{if(e.target.id==="copyModal")modal.classList.remove("show")};
 }
 window.addEventListener("DOMContentLoaded",bindCopyModal);
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-picker]");
+  if(!btn)return;
+  const input=$(btn.dataset.picker);
+  if(!input)return;
+  if(input.showPicker){
+    input.showPicker();
+  }else{
+    input.focus();
+    input.click();
+  }
+});
 load(localISO()).catch(err=>alert("加载失败："+err.message));
 setInterval(refreshCountdowns,30000);
 </script>
