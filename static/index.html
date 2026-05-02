@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.5.2</title>
+<title>醒来先看 v1.5.6</title>
 <script>
 (function(){
   try{
@@ -31,6 +31,41 @@ p{margin:6px 0;color:var(--muted)}
 .section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .kicker{font-size:13px;color:var(--muted);font-weight:650;letter-spacing:.02em}
 input,textarea,button{font:inherit;border-radius:14px;border:1px solid var(--line);padding:10px 12px}
+button{
+  transition:background .18s ease,color .18s ease,border-color .18s ease,filter .18s ease,transform .12s ease,box-shadow .18s ease;
+}
+button:not(:disabled):hover{
+  filter:brightness(1.07);
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(0,0,0,.14);
+}
+button:not(:disabled):active{
+  transform:translateY(0);
+  filter:brightness(.98);
+}
+.picker-btn:not(:disabled):hover{
+  transform:translateY(-50%);
+  box-shadow:none;
+}
+.picker-btn:not(:disabled):active{
+  transform:translateY(-50%);
+  filter:brightness(.98);
+}
+.thought-delete:not(:disabled):hover,
+.done-delete:not(:disabled):hover{
+  box-shadow:none;
+}
+@media(hover:none){
+  button:not(:disabled):hover{
+    filter:none;
+    transform:none;
+    box-shadow:inherit;
+  }
+  .picker-btn:not(:disabled):hover{
+    transform:translateY(-50%);
+    box-shadow:none;
+  }
+}
 input,textarea{width:100%;background:var(--card2);color:var(--text)}
 input[type=checkbox]{width:auto;transform:scale(1.16)}
 textarea{min-height:96px;resize:vertical;line-height:1.45}
@@ -64,12 +99,105 @@ html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a1
 .input-picker input{width:100%;padding-right:52px}
 .input-picker input::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
 .picker-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:2}
-.picker-btn:hover{background:var(--accent2)}
+.picker-btn:hover{background:var(--accent2);transform:translateY(-50%);box-shadow:none}
 html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,255,.25))}
 .date-picker{flex:1.8 1 230px;min-width:220px}
 .time-picker{flex:1.35 1 180px;min-width:170px}
 .date-picker input,.time-picker input{font-variant-numeric:tabular-nums}
 #taskDue,#taskTime{font-size:17px}
+
+
+.done-medals{
+  list-style:none;
+  padding:0;
+  margin:12px 0 0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.done-medals .done-card{
+  position:relative;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:13px 14px;
+  border-radius:20px;
+  border:1px solid rgba(224,196,143,.28);
+  background:linear-gradient(135deg,rgba(224,196,143,.22),rgba(224,196,143,.08));
+  box-shadow:0 8px 20px rgba(0,0,0,.10);
+}
+.done-medals .done-badge{
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:rgba(224,196,143,.32);
+  color:var(--accent);
+  font-size:18px;
+  font-weight:900;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.done-medals .done-title{
+  color:var(--text);
+  font-weight:850;
+  line-height:1.35;
+  word-break:break-word;
+}
+.done-medals .done-time{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.25;
+}
+
+.done-medals .done-delete{
+  min-width:0;
+  padding:10px 15px!important;
+  border-radius:16px;
+  background:#5a2528!important;
+  color:#fff0f0!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:none!important;
+}
+.done-medals .done-delete:hover{
+  background:#713034!important;
+}
+html.dark .done-medals .done-delete{
+  background:#5a2528!important;
+  color:#fff0f0!important;
+}
+html.dark .done-medals .done-delete:hover{
+  background:#713034!important;
+}
+
+.done-medals .done-empty{
+  width:100%;
+  display:block;
+  border:1px dashed var(--line);
+  background:transparent;
+  box-shadow:none;
+}
+html.dark .done-medals .done-card{
+  background:linear-gradient(135deg,rgba(224,196,143,.20),rgba(74,59,82,.22));
+  border-color:rgba(224,196,143,.22);
+  box-shadow:0 8px 22px rgba(0,0,0,.22);
+}
+html.dark .done-medals .done-badge{
+  background:rgba(224,196,143,.26);
+  color:#ead7b3;
+}
+@media(max-width:520px){
+  .done-medals .done-card{
+    grid-template-columns:auto 1fr;
+  }
+  .done-medals .done-delete{
+    grid-column:2;
+    justify-self:start;
+    padding:8px 13px!important;
+  }
+}
 
 .thought-grid{
   list-style:none;
@@ -234,7 +362,7 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
   <div class="biggrid">
     <div class="card white">
       <h3>昨天已经完成</h3>
-      <ul id="yesterdayDoneList"></ul>
+      <ul id="yesterdayDoneList" class="done-medals"></ul>
       <h3 style="margin-top:16px">昨天的小感想</h3>
       <ul id="yesterdayThoughtList" class="thought-grid"></ul>
       <h3 style="margin-top:16px">昨天归档的 DDL</h3>
@@ -264,7 +392,7 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
         <input id="doneInput" placeholder="比如：洗澡、交作业、买台灯">
         <button id="addDoneBtn">记录完成</button>
       </div>
-      <ul id="todayDoneList"></ul>
+      <ul id="todayDoneList" class="done-medals"></ul>
       <h3 style="margin-top:16px">今天的小感想</h3>
       <div class="row">
         <input id="thoughtInput" placeholder="比如：这个知识点好难，明天要多看看喵">
@@ -380,7 +508,10 @@ async function api(path,options={}){const res=await fetch(path,{headers:{"Conten
 async function load(date){const d=date||$("todayDate").value||localISO();state=await api(`/api/state?date=${encodeURIComponent(d)}`);render()}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function empty(text){return `<li><div class="empty">${text}</div></li>`}
-function listDone(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.text)}</div><div class="task-meta">${escapeHtml(x.created_at||"")}</div></div><button class="danger" data-delete-done="${x.id}">删除</button></li>`).join(""):empty("这里还空着。空着也不算失败喵。")}
+function listDone(el,arr){
+  el.classList.add("done-medals");
+  el.innerHTML=arr.length?arr.map(x=>`<li class="done-card"><div class="done-badge">✓</div><div class="done-main"><div class="done-title">${escapeHtml(x.text)}</div><div class="done-time">${escapeHtml(x.created_at||"")}</div></div><button class="danger done-delete" data-delete-done="${x.id}">删除</button></li>`).join(""):`<li class="done-empty"><div class="empty">这里还空着。空着也不算失败喵。</div></li>`;
+}
 function listThoughts(el,arr,editable=false){
   el.classList.add("thought-grid");
   el.innerHTML=arr.length?arr.map(x=>`<li class="thought-card ${editable?"":"read-only"}"><div class="thought-text">${escapeHtml(x.text)}</div><div class="thought-time">${escapeHtml(x.created_at||"")}</div>${editable?`<button class="thought-delete" data-delete-thought="${x.id}" title="删除">×</button>`:""}</li>`).join(""):`<li class="thought-empty"><div class="empty">还没有小感想。</div></li>`;
