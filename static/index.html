@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.5.6</title>
+<title>醒来先看 v1.5.7</title>
 <script>
 (function(){
   try{
@@ -106,6 +106,140 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
 .date-picker input,.time-picker input{font-variant-numeric:tabular-nums}
 #taskDue,#taskTime{font-size:17px}
 
+
+
+.ddl-archive{
+  list-style:none;
+  padding:0;
+  margin:12px 0 0;
+  display:grid;
+  gap:12px;
+}
+.ddl-card{
+  position:relative;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:13px;
+  align-items:center;
+  padding:14px;
+  border-radius:22px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  box-shadow:0 8px 22px rgba(0,0,0,.08);
+}
+.ddl-card.completed{
+  border-color:rgba(112,153,87,.34);
+  background:linear-gradient(135deg,rgba(176,201,128,.25),rgba(224,196,143,.13));
+}
+.ddl-card.expired{
+  border-color:rgba(153,27,27,.26);
+  background:linear-gradient(135deg,rgba(90,37,40,.25),rgba(74,59,82,.10));
+}
+.ddl-mark{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  font-size:19px;
+  flex:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.20);
+}
+.ddl-card.completed .ddl-mark{
+  background:rgba(183,205,137,.34);
+  color:#365c2b;
+}
+.ddl-card.expired .ddl-mark{
+  background:rgba(90,37,40,.42);
+  color:#ffd5d5;
+}
+.ddl-content{min-width:0}
+.ddl-title-row{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.ddl-title{
+  font-weight:900;
+  font-size:18px;
+  line-height:1.35;
+  word-break:break-word;
+}
+.ddl-chip{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:4px 8px;
+  font-size:12px;
+  font-weight:800;
+}
+.ddl-card.completed .ddl-chip{
+  background:rgba(22,101,52,.16);
+  color:#166534;
+}
+.ddl-card.expired .ddl-chip{
+  background:rgba(153,27,27,.18);
+  color:#991b1b;
+}
+.ddl-meta{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
+.ddl-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+}
+.ddl-actions button{
+  margin:0;
+}
+.ddl-actions .danger{
+  background:#5a2528!important;
+  color:#fff0f0!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+}
+.ddl-empty{
+  width:100%;
+  display:block;
+  border:1px dashed var(--line);
+  background:transparent;
+  box-shadow:none;
+}
+html.dark .ddl-card.completed{
+  border-color:rgba(224,196,143,.24);
+  background:linear-gradient(135deg,rgba(176,201,128,.18),rgba(224,196,143,.10));
+}
+html.dark .ddl-card.completed .ddl-mark{
+  background:rgba(224,196,143,.22);
+  color:#ead7b3;
+}
+html.dark .ddl-card.completed .ddl-chip{
+  background:rgba(22,101,52,.30);
+  color:#bbf7d0;
+}
+html.dark .ddl-card.expired{
+  border-color:rgba(153,27,27,.30);
+  background:linear-gradient(135deg,rgba(90,37,40,.30),rgba(74,59,82,.18));
+}
+html.dark .ddl-card.expired .ddl-chip{
+  background:rgba(153,27,27,.28);
+  color:#fecaca;
+}
+@media(max-width:650px){
+  .ddl-card{
+    grid-template-columns:auto 1fr;
+    align-items:start;
+  }
+  .ddl-actions{
+    grid-column:2;
+    justify-content:flex-start;
+  }
+}
 
 .done-medals{
   list-style:none;
@@ -366,7 +500,7 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
       <h3 style="margin-top:16px">昨天的小感想</h3>
       <ul id="yesterdayThoughtList" class="thought-grid"></ul>
       <h3 style="margin-top:16px">昨天归档的 DDL</h3>
-      <ul id="yesterdayCompletedList"></ul>
+      <ul id="yesterdayCompletedList" class="ddl-archive"></ul>
     </div>
     <div class="card white">
       <h3>昨晚留给今天的话</h3>
@@ -400,7 +534,7 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
       </div>
       <ul id="todayThoughtList" class="thought-grid"></ul>
       <h3 style="margin-top:16px">今天归档的 DDL</h3>
-      <ul id="todayCompletedList"></ul>
+      <ul id="todayCompletedList" class="ddl-archive"></ul>
     </div>
     <div class="card white">
       <h3>写给明天的猫猫留言</h3>
@@ -529,7 +663,17 @@ function reactivateButton(x){
   const label=status==="completed"?"重新启动任务":"继续处理";
   return `<button class="light" data-reactivate-task="${x.id}" data-reactivate-status="${status}" data-reactivate-title="${escapeHtml(x.title)}" data-reactivate-due-date="${escapeHtml(x.due_date||"")}" data-reactivate-due-time="${escapeHtml(x.due_time||"")}">${label}</button>`;
 }
-function listCompleted(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.title)} ${archiveBadge(x)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""} · ${archiveMeta(x)}</div></div><div class="toolbar">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有归档的 DDL。")}
+function listCompleted(el,arr){
+  el.classList.add("ddl-archive");
+  el.innerHTML=arr.length?arr.map(x=>{
+    const isExpired=x.status==="expired";
+    const cls=isExpired?"expired":"completed";
+    const mark=isExpired?"!":"✓";
+    const chip=isExpired?"过期归档":"完成归档";
+    const meta=[dueLabel(x), x.note?x.note:"", archiveMeta(x)].filter(Boolean).map(escapeHtml).join(" · ");
+    return `<li class="ddl-card ${cls}"><div class="ddl-mark">${mark}</div><div class="ddl-content"><div class="ddl-title-row"><span class="ddl-title">${escapeHtml(x.title)}</span><span class="ddl-chip">${chip}</span></div><div class="ddl-meta">${meta}</div></div><div class="ddl-actions">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
+  }).join(""):`<li class="ddl-empty"><div class="empty">没有归档的 DDL。今天暂时没有旧怪尸体喵。</div></li>`;
+}
 function listActive(el,arr){
   el.innerHTML=arr.length?arr.map(x=>`<li class="active-task" data-task-id="${x.id}"><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有未完成 DDL。少一个怪，真好。")
 }
