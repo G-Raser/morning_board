@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.5.7</title>
+<title>醒来先看 v1.7.2</title>
 <script>
 (function(){
   try{
@@ -107,6 +107,255 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
 #taskDue,#taskTime{font-size:17px}
 
 
+
+
+
+.thought-section{
+  margin-top:18px;
+  padding:14px 16px 16px;
+  border-radius:24px;
+  border:1px solid rgba(224,196,143,.16);
+  background:linear-gradient(135deg,rgba(224,196,143,.055),rgba(74,59,82,.07));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.thought-section h3{
+  margin-top:0!important;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.thought-section h3::before{
+  content:"";
+  width:7px;
+  height:20px;
+  border-radius:999px;
+  background:rgba(224,196,143,.55);
+  box-shadow:0 0 14px rgba(224,196,143,.12);
+}
+.thought-section .tiny{
+  margin:10px 0 0;
+}
+html.dark .thought-section{
+  border-color:rgba(224,196,143,.15);
+  background:linear-gradient(135deg,rgba(224,196,143,.06),rgba(74,59,82,.12));
+}
+@media(max-width:520px){
+  .thought-section{
+    padding:13px 12px 14px;
+    border-radius:22px;
+  }
+}
+
+.thought-create{
+  display:grid;
+  grid-template-columns:82px auto;
+  gap:9px;
+  margin-top:10px;
+  align-items:end;
+  justify-content:start;
+}
+.emoji-input{
+  text-align:center;
+  font-size:24px;
+  padding:8px 10px;
+  caret-color:transparent;
+}
+.thought-groups{
+  list-style:none;
+  padding:0;
+  margin:12px 0 0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:flex-start;
+}
+.thought-group-card{
+  position:relative;
+  display:block;
+  border:0;
+  background:transparent;
+  padding:0;
+  overflow:visible;
+}
+.thought-bubble{
+  display:grid;
+  place-items:center;
+  width:72px;
+  height:56px;
+  min-width:72px;
+  padding:0;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.24);
+  background:#e2c48d;
+  color:#2c2116;
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+  cursor:pointer;
+}
+.thought-group-card:nth-child(5n+1) .thought-bubble{background:#e8d1a2}
+.thought-group-card:nth-child(5n+2) .thought-bubble{background:#d9b978}
+.thought-group-card:nth-child(5n+3) .thought-bubble{background:#eadbb8}
+.thought-group-card:nth-child(5n+4) .thought-bubble{background:#cfaa6d}
+.thought-group-card:nth-child(5n+5) .thought-bubble{background:#dfc28c}
+.thought-emoji{
+  font-size:30px;
+  line-height:1;
+  flex:none;
+}
+.thought-bubble-text{
+  display:none!important;
+}
+.thought-bubble-title{
+  font-weight:850;
+  line-height:1.15;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.thought-bubble-count{
+  font-size:12px;
+  opacity:.72;
+  line-height:1.2;
+}
+.thought-group-panel{
+  display:none;
+  width:min(360px,calc(100vw - 48px));
+  margin-top:8px;
+  padding:12px;
+  border-radius:22px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  box-shadow:0 14px 30px rgba(0,0,0,.16);
+}
+.thought-group-card.open .thought-group-panel{
+  display:block;
+}
+.thought-group-card.preview:not(.open){
+  z-index:60;
+}
+.thought-group-card.preview:not(.open) .thought-group-panel{
+  display:block;
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  z-index:70;
+}
+.thought-panel-title{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 10px;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:800;
+}
+.thought-panel-title .panel-emoji{
+  font-size:20px;
+  line-height:1;
+}
+.thought-panel-title .panel-name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.thought-item-create{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+.thought-item-create input{
+  min-width:0;
+}
+.thought-item-create button{
+  padding:9px 11px;
+}
+.thought-item-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.thought-item-chip{
+  position:relative;
+  display:block;
+  width:fit-content;
+  max-width:100%;
+  padding:9px 33px 8px 11px;
+  border-radius:16px;
+  border:1px solid rgba(224,196,143,.24);
+  background:rgba(224,196,143,.16);
+  color:var(--text);
+  box-shadow:none;
+}
+.thought-item-chip.read-only{
+  padding-right:11px;
+}
+.thought-item-text{
+  font-weight:700;
+  line-height:1.42;
+  word-break:break-word;
+}
+.thought-item-time{
+  margin-top:4px;
+  font-size:11px;
+  color:var(--muted);
+}
+.thought-item-delete,
+.thought-group-delete{
+  position:absolute;
+  width:23px;
+  height:23px;
+  min-width:0;
+  padding:0!important;
+  border-radius:999px;
+  border:0;
+  background:rgba(107,43,43,.18);
+  color:#6b2b2b;
+  font-size:16px;
+  line-height:21px;
+  font-weight:900;
+  box-shadow:none!important;
+}
+.thought-item-delete{
+  top:7px;
+  right:7px;
+}
+.thought-group-delete{
+  top:-6px;
+  right:-6px;
+  background:#5a2528;
+  color:#fff0f0;
+}
+.thought-group-empty{
+  width:100%;
+  display:block;
+  border:1px dashed var(--line);
+  background:transparent;
+  box-shadow:none;
+}
+html.dark .thought-bubble{
+  border-color:rgba(255,255,255,.16);
+  box-shadow:0 8px 22px rgba(0,0,0,.24);
+}
+html.dark .thought-group-panel{
+  box-shadow:0 14px 30px rgba(0,0,0,.28);
+}
+html.dark .thought-item-chip{
+  background:rgba(224,196,143,.11);
+}
+html.dark .thought-item-delete{
+  background:rgba(107,43,43,.35);
+  color:#ffd7d7;
+}
+@media(max-width:520px){
+  .thought-create{
+    grid-template-columns:72px auto;
+  }
+  .thought-group-panel{
+    width:calc(100vw - 56px);
+  }
+}
 
 .ddl-archive{
   list-style:none;
@@ -462,6 +711,89 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
 .cat-modal input[type="date"]::-webkit-calendar-picker-indicator,
 .cat-modal input[type="time"]::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
 @media(max-width:850px){body{padding:14px}.grid,.biggrid{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}li{align-items:flex-start;flex-direction:column}.toolbar button{width:100%}.topbar{align-items:stretch}}
+
+.card .row label .input-picker{
+  margin-top:6px;
+}
+.card .row label .time-picker{
+  max-width:260px;
+}
+@media(max-width:520px){
+  .card .row label .time-picker{
+    max-width:none;
+  }
+}
+
+
+.settings-card .row{
+  display:flex;
+  justify-content:flex-start;
+  align-items:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.settings-card .row > label:first-child{
+  flex:0 0 240px!important;
+  max-width:240px;
+}
+.settings-card .row > label.row{
+  flex:0 0 auto!important;
+  align-items:center;
+  padding-bottom:11px;
+  white-space:nowrap;
+}
+.settings-card .row > button{
+  flex:0 0 auto;
+}
+.settings-card .row label .time-picker{
+  width:100%;
+  max-width:240px;
+}
+@media(max-width:700px){
+  .settings-card .row > label:first-child{
+    flex:1 1 220px!important;
+    max-width:none;
+  }
+}
+
+.settings-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  align-items:stretch;
+}
+.settings-grid .settings-card{
+  margin:0;
+}
+.settings-grid .settings-card .row{
+  display:grid;
+  grid-template-columns:minmax(180px,260px) auto auto auto;
+  align-items:end;
+  gap:10px;
+}
+.settings-grid .settings-card .row > label:first-child{
+  flex:unset!important;
+  max-width:none;
+}
+.settings-grid .settings-card .row > label.row{
+  padding-bottom:11px;
+  justify-self:start;
+}
+.settings-grid .settings-card .row label .time-picker{
+  max-width:none;
+}
+.settings-grid .settings-card .notice{
+  margin-top:10px;
+}
+@media(max-width:1100px){
+  .settings-grid{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .settings-grid .settings-card .row{grid-template-columns:1fr}
+  .settings-grid .settings-card .row > label.row{padding-bottom:0}
+  .settings-grid .settings-card .row > button{width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -497,8 +829,10 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
     <div class="card white">
       <h3>昨天已经完成</h3>
       <ul id="yesterdayDoneList" class="done-medals"></ul>
-      <h3 style="margin-top:16px">昨天的小感想</h3>
-      <ul id="yesterdayThoughtList" class="thought-grid"></ul>
+      <section class="thought-section">
+        <h3 style="margin-top:16px">昨天的小感想</h3>
+        <ul id="yesterdayThoughtGroupList" class="thought-groups"></ul>
+      </section>
       <h3 style="margin-top:16px">昨天归档的 DDL</h3>
       <ul id="yesterdayCompletedList" class="ddl-archive"></ul>
     </div>
@@ -527,12 +861,15 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
         <button id="addDoneBtn">记录完成</button>
       </div>
       <ul id="todayDoneList" class="done-medals"></ul>
-      <h3 style="margin-top:16px">今天的小感想</h3>
-      <div class="row">
-        <input id="thoughtInput" placeholder="比如：这个知识点好难，明天要多看看喵">
-        <button id="addThoughtBtn">记一条</button>
-      </div>
-      <ul id="todayThoughtList" class="thought-grid"></ul>
+      <section class="thought-section">
+        <h3 style="margin-top:16px">今天的小感想</h3>
+        <div class="thought-create">
+          <input id="thoughtEmojiInput" class="emoji-input" placeholder="😊" maxlength="8" aria-label="小感想 emoji">
+          <button id="addThoughtGroupBtn">建气泡</button>
+        </div>
+        <p class="tiny">先放一个 emoji 气泡，点开后再把具体小句子投进去喵。</p>
+        <ul id="todayThoughtGroupList" class="thought-groups"></ul>
+      </section>
       <h3 style="margin-top:16px">今天归档的 DDL</h3>
       <ul id="todayCompletedList" class="ddl-archive"></ul>
     </div>
@@ -560,11 +897,12 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
   </div>
 </section>
 
-<section class="card">
+<div class="settings-grid">
+<section class="card settings-card">
   <h2>每日提醒</h2>
   <p class="muted">到点提醒你更新“今天写给明天看的”这一板。浏览器页面开着最稳。</p>
   <div class="row">
-    <label style="flex:1">提醒时间<input id="reminderTime" type="time"></label>
+    <label style="flex:1">提醒时间<div class="input-picker time-picker"><input id="reminderTime" type="time"><button type="button" class="picker-btn" data-picker="reminderTime" aria-label="选择提醒时间">⏰</button></div></label>
     <label class="row" style="margin:0"><input id="reminderEnabled" type="checkbox"> 开启每日提醒</label>
     <button id="saveReminderBtn">保存提醒</button>
     <button class="light" id="testReminderBtn">测试提醒</button>
@@ -572,12 +910,32 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
   <div class="notice">提醒依赖浏览器通知：电脑要开着，后端要运行，浏览器要允许通知。更强提醒可以再配系统日历/任务计划。</div>
 </section>
 
+<section class="card settings-card">
+  <h2>每日切换时间</h2>
+  <p class="muted">不是按 00:00 切天。比如设成 05:00，凌晨 0 点到 4:59 还算前一天，适合熬夜写存档喵。</p>
+  <div class="row">
+    <label style="flex:1">新的一天从<div class="input-picker time-picker"><input id="dayStartTime" type="time" step="3600"><button type="button" class="picker-btn" data-picker="dayStartTime" aria-label="选择每日切换时间">⏰</button></div></label>
+    <button id="saveDayStartBtn">保存切换时间</button>
+  </div>
+  <div class="notice">默认 05:00。改完后点“回到今天”或刷新，就会按新的猫猫日切时间显示。</div>
+</section>
+
+</div>
 <div class="tiny" style="text-align:center">数据保存在 SQLite 数据库 morning_board.db。备份这个文件就能备份存档。</div>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);let state={};
-function localISO(d=new Date()){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
+const openThoughtGroups=new Set();
+function dateToISO(d=new Date()){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
+function boardTodayISO(){
+  const d=new Date();
+  const rawHour=Number(state?.day_start_hour ?? 5);
+  const cutoff=Number.isFinite(rawHour)?Math.max(0,Math.min(23,rawHour)):5;
+  if(d.getHours()<cutoff)d.setDate(d.getDate()-1);
+  return dateToISO(d);
+}
+function localISO(d=new Date()){return dateToISO(d)}
 const nowHHMM=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
 function dueDateObj(t){
   if(!t?.due_date)return null;
@@ -639,16 +997,56 @@ function progressHtml(t){
   return `<div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${p.pct}%"></div></div><div class="progress-meta">${escapeHtml(p.label)}</div></div>`;
 }
 async function api(path,options={}){const res=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!res.ok)throw new Error(await res.text()||"Request failed");return res.json()}
-async function load(date){const d=date||$("todayDate").value||localISO();state=await api(`/api/state?date=${encodeURIComponent(d)}`);render()}
+async function load(date){
+  const d=date||$("todayDate").value||"";
+  const path=d?`/api/state?date=${encodeURIComponent(d)}`:"/api/state";
+  state=await api(path);
+  render();
+}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function empty(text){return `<li><div class="empty">${text}</div></li>`}
 function listDone(el,arr){
   el.classList.add("done-medals");
   el.innerHTML=arr.length?arr.map(x=>`<li class="done-card"><div class="done-badge">✓</div><div class="done-main"><div class="done-title">${escapeHtml(x.text)}</div><div class="done-time">${escapeHtml(x.created_at||"")}</div></div><button class="danger done-delete" data-delete-done="${x.id}">删除</button></li>`).join(""):`<li class="done-empty"><div class="empty">这里还空着。空着也不算失败喵。</div></li>`;
 }
-function listThoughts(el,arr,editable=false){
-  el.classList.add("thought-grid");
-  el.innerHTML=arr.length?arr.map(x=>`<li class="thought-card ${editable?"":"read-only"}"><div class="thought-text">${escapeHtml(x.text)}</div><div class="thought-time">${escapeHtml(x.created_at||"")}</div>${editable?`<button class="thought-delete" data-delete-thought="${x.id}" title="删除">×</button>`:""}</li>`).join(""):`<li class="thought-empty"><div class="empty">还没有小感想。</div></li>`;
+function groupTitle(g){
+  const title=(g.title||"").trim();
+  return title || "小感想";
+}
+function thoughtGroupLines(groups){
+  const lines=[];
+  (groups||[]).forEach(g=>{
+    const head=`${g.emoji||"💭"} ${groupTitle(g)}`;
+    const items=g.items||[];
+    if(items.length){
+      lines.push(`- ${head}`);
+      items.forEach(item=>lines.push(`  - ${item.text}`));
+    }else{
+      lines.push(`- ${head}：暂无具体句子`);
+    }
+  });
+  return lines.length?lines:["- 暂无"];
+}
+function listThoughtGroups(el,arr,editable=false){
+  el.classList.add("thought-groups");
+  el.innerHTML=arr.length?arr.map(g=>{
+    const id=String(g.id);
+    const items=g.items||[];
+    const open=openThoughtGroups.has(id);
+    const name=groupTitle(g);
+    const itemHtml=items.length?items.map(item=>`<li class="thought-item-chip ${editable?"":"read-only"}"><div class="thought-item-text">${escapeHtml(item.text)}</div><div class="thought-item-time">${escapeHtml(item.created_at||"")}</div>${editable?`<button class="thought-item-delete" data-delete-thought-item="${item.id}" title="删除">×</button>`:""}</li>`).join(""):`<li class="thought-item-chip read-only"><div class="thought-item-text muted">这里还没有具体小句子喵。</div></li>`;
+    return `<li class="thought-group-card ${open?"open":""}" data-thought-group-id="${id}">
+      <button type="button" class="thought-bubble" data-toggle-thought-group="${id}" title="${escapeHtml(name)} · ${items.length} 条" aria-label="${escapeHtml(name)}，${items.length} 条">
+        <span class="thought-emoji">${escapeHtml(g.emoji||"💭")}</span>
+      </button>
+      ${editable?`<button class="thought-group-delete" data-delete-thought-group="${id}" title="删除整个气泡">×</button>`:""}
+      <div class="thought-group-panel">
+        <div class="thought-panel-title"><span class="panel-emoji">${escapeHtml(g.emoji||"💭")}</span><span class="panel-name">${escapeHtml(name)}</span><span>${items.length} 条</span></div>
+        ${editable?`<div class="thought-item-create"><input data-thought-item-input="${id}" placeholder="往 ${escapeHtml(g.emoji||"💭")} 里写一句"><button data-add-thought-item="${id}">投入</button></div>`:""}
+        <ul class="thought-item-list">${itemHtml}</ul>
+      </div>
+    </li>`;
+  }).join(""):`<li class="thought-group-empty"><div class="empty">还没有小感想气泡。今天可以先放一个 emoji 喵。</div></li>`;
 }
 function archiveMeta(x){
   if(x.status==="expired")return `已过期归档：${escapeHtml(x.archived_at||"")}`;
@@ -706,12 +1104,14 @@ $("todayDate").value=state.today||localISO();
 document.documentElement.classList.toggle("dark",state.theme==="dark");
 try{localStorage.setItem("morning-board-theme",state.theme||"light")}catch(e){}
 $("reminderEnabled").checked=state.reminder_enabled==="1";$("reminderTime").value=state.reminder_time||"22:30";
+const dayStartHour=String(Math.max(0,Math.min(23,Number(state.day_start_hour??5)))).padStart(2,"0");
+$("dayStartTime").value=`${dayStartHour}:00`;
 $("tomorrowNoteInput").value=state.today_note?.tomorrow_note||"";
 $("yesterdayNote").textContent=state.yesterday_note?.tomorrow_note||"还没有留言。今晚可以给明天的自己留一条喵。";
 listDone($("yesterdayDoneList"),state.yesterday_done||[]);
 listDone($("todayDoneList"),state.today_done||[]);
-listThoughts($("yesterdayThoughtList"),state.yesterday_thoughts||[],false);
-listThoughts($("todayThoughtList"),state.today_thoughts||[],true);
+listThoughtGroups($("yesterdayThoughtGroupList"),state.yesterday_thought_groups||[],false);
+listThoughtGroups($("todayThoughtGroupList"),state.today_thought_groups||[],true);
 listCompleted($("yesterdayCompletedList"),state.yesterday_completed_tasks||[]);
 listCompleted($("todayCompletedList"),state.today_completed_tasks||[]);
 listActive($("activeTaskList"),state.active_tasks||[]);
@@ -719,17 +1119,30 @@ listActive($("activeTaskList"),state.active_tasks||[]);
 async function saveSettings(patch){await api("/api/settings",{method:"POST",body:JSON.stringify(patch)});await load()}
 async function requestNotifyPermission(){if(!("Notification" in window))return false;if(Notification.permission==="granted")return true;if(Notification.permission!=="denied"){const p=await Notification.requestPermission();return p==="granted"}return false}
 async function showReminder(test=false){const title=test?"测试提醒：该投喂明天了":"该写给明天的自己了";const body="简单写：今天做完了什么，明天先看什么。两行也算胜利喵。";if(await requestNotifyPermission()){new Notification(title,{body})}else{alert(title+"\\n"+body)}}
-function checkReminder(){if(state.reminder_enabled!=="1")return;const t=state.reminder_time||"22:30";if(nowHHMM()!==t)return;const key=`reminded-${localISO()}-${t}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");showReminder(false)}
+function checkReminder(){if(state.reminder_enabled!=="1")return;const t=state.reminder_time||"22:30";if(nowHHMM()!==t)return;const key=`reminded-${state?.today||boardTodayISO()}-${t}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");showReminder(false)}
 setInterval(checkReminder,30000);
-$("todayDate").value=localISO();
-$("todayBtn").onclick=()=>load(localISO());
+$("todayDate").value="";
+$("todayBtn").onclick=()=>load("");
 $("themeBtn").onclick=async()=>saveSettings({theme:document.documentElement.classList.contains("dark")?"light":"dark"});
 $("addDoneBtn").onclick=async()=>{const text=$("doneInput").value.trim();if(!text)return;await api("/api/done",{method:"POST",body:JSON.stringify({text,done_date:$("todayDate").value})});$("doneInput").value="";await load()};
-$("addThoughtBtn").onclick=async()=>{const text=$("thoughtInput").value.trim();if(!text)return;await api("/api/thoughts",{method:"POST",body:JSON.stringify({text,thought_date:$("todayDate").value})});$("thoughtInput").value="";await load();showToast("小感想已记下喵")};
+$("addThoughtGroupBtn").onclick=async()=>{
+  const emoji=($("thoughtEmojiInput").value||"💭").trim()||"💭";
+  const group=await api("/api/thought_groups",{method:"POST",body:JSON.stringify({emoji,thought_date:$("todayDate").value})});
+  $("thoughtEmojiInput").value="";
+  openThoughtGroups.add(String(group.id));
+  await load();
+  showToast("小感想气泡已建好喵");
+};
 
 $("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();showToast("已保存给明天喵")};
 $("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
+$("saveDayStartBtn").onclick=async()=>{
+  const time=$("dayStartTime").value||"05:00";
+  const hour=Number((time.split(":")[0]||"5"));
+  await saveSettings({day_start_hour:Number.isFinite(hour)?hour:5});
+  showToast("每日切换时间已保存喵");
+};
 $("testReminderBtn").onclick=()=>showReminder(true);
 let toastTimer=null;
 function showToast(msg){
@@ -749,7 +1162,7 @@ async function askDueEdit(btn){
   return await askDueModal({
     title:`修改「${title}」的 DDL`,
     message:"设错日期也没关系，猫猫帮你改喵。",
-    defaultDate:oldDate||localISO(),
+    defaultDate:oldDate||state?.today||boardTodayISO(),
     defaultTime:oldTime||"",
     allowClear:true
   });
@@ -836,15 +1249,65 @@ async function askDueModal({title,message,defaultDate="",defaultTime="",allowCle
   return {due_date:dateText,due_time:timeText||null};
 }
 
+
+document.body.addEventListener("mouseover",e=>{
+  const card=e.target.closest(".thought-group-card");
+  if(!card)return;
+  if(card.contains(e.relatedTarget))return;
+  card.classList.add("preview");
+});
+document.body.addEventListener("mouseout",e=>{
+  const card=e.target.closest(".thought-group-card");
+  if(!card)return;
+  if(card.contains(e.relatedTarget))return;
+  card.classList.remove("preview");
+});
+
 document.body.onclick=async e=>{
   const btn=e.target.closest("button");
   if(!btn)return;
   const doneId=btn.dataset.deleteDone;
   const taskId=btn.dataset.deleteTask;
   const thoughtId=btn.dataset.deleteThought;
+  const toggleThoughtGroup=btn.dataset.toggleThoughtGroup;
+  const deleteThoughtGroup=btn.dataset.deleteThoughtGroup;
+  const addThoughtItem=btn.dataset.addThoughtItem;
+  const deleteThoughtItem=btn.dataset.deleteThoughtItem;
   const completeId=btn.dataset.completeTask;
   const reactivateId=btn.dataset.reactivateTask;
   const editDueId=btn.dataset.editDueTask;
+  if(toggleThoughtGroup){
+    document.querySelector(`[data-thought-group-id="${toggleThoughtGroup}"]`)?.classList.remove("preview");
+    if(openThoughtGroups.has(toggleThoughtGroup))openThoughtGroups.delete(toggleThoughtGroup);
+    else openThoughtGroups.add(toggleThoughtGroup);
+    render();
+  }
+  if(deleteThoughtGroup){
+    const ok=await confirmCat({title:"删除这个 emoji 气泡？",message:"里面的小句子也会一起删除喵。",okText:"删除",danger:true});
+    if(ok){
+      openThoughtGroups.delete(String(deleteThoughtGroup));
+      await api(`/api/thought_groups/${deleteThoughtGroup}`,{method:"DELETE"});
+      await load();
+      showToast("小感想气泡已删除喵");
+    }
+  }
+  if(addThoughtItem){
+    const input=document.querySelector(`[data-thought-item-input="${addThoughtItem}"]`);
+    const text=(input?.value||"").trim();
+    if(!text)return;
+    await api(`/api/thought_groups/${addThoughtItem}/items`,{method:"POST",body:JSON.stringify({text})});
+    openThoughtGroups.add(String(addThoughtItem));
+    await load();
+    showToast("小句子已投进去喵");
+  }
+  if(deleteThoughtItem){
+    const ok=await confirmCat({title:"删除这条小句子？",message:"删掉后就不在这个 emoji 气泡里显示了喵。",okText:"删除",danger:true});
+    if(ok){
+      await api(`/api/thought_items/${deleteThoughtItem}`,{method:"DELETE"});
+      await load();
+      showToast("已删除喵");
+    }
+  }
   if(doneId){
     const ok=await confirmCat({title:"删除完成记录？",message:"这条完成记录会被删除喵。",okText:"删除",danger:true});
     if(ok){
@@ -902,7 +1365,7 @@ async function copyTextWithFallback(text){
     setTimeout(()=>{$("copyText").focus();$("copyText").select()},50);
   }
 }
-$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`昨天的小感想（${state.yesterday}）：`,...(state.yesterday_thoughts||[]).map(x=>`- ${x.text}`),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"",`今天的小感想（${state.today}）：`,...(state.today_thoughts||[]).map(x=>`- ${x.text}`),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
+$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`昨天的小感想（${state.yesterday}）：`,...thoughtGroupLines(state.yesterday_thought_groups||[]),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"",`今天的小感想（${state.today}）：`,...thoughtGroupLines(state.today_thought_groups||[]),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
 $("todayDate").onchange=()=>load($("todayDate").value);
 
 function bindCopyModal(){
@@ -942,7 +1405,7 @@ async function askNewDueForReactivation(btn){
   return await askDueModal({
     title:status==="expired"?`继续处理「${title}」`:`给「${title}」设置新 DDL`,
     message:"请选择新的截止日期和时间喵。",
-    defaultDate:localISO(),
+    defaultDate:state?.today||boardTodayISO(),
     defaultTime:""
   });
 }
@@ -961,7 +1424,7 @@ document.addEventListener("click",e=>{
 });
 window.addEventListener("DOMContentLoaded",()=>{
   bindCatModal();
-  load(localISO()).catch(err=>alert("加载失败："+err.message));
+  load("").catch(err=>alert("加载失败："+err.message));
   setInterval(refreshCountdowns,1000);
 });
 </script>

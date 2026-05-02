@@ -9,11 +9,30 @@ DB_PATH = BASE_DIR / "morning_board.db"
 app = Flask(__name__, static_folder="static", static_url_path="")
 CORS(app)
 
+DEFAULT_DAY_START_HOUR = 5
+
 def local_now_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+def get_day_start_hour():
+    try:
+        with get_conn() as conn:
+            if not table_exists(conn, "settings"):
+                return DEFAULT_DAY_START_HOUR
+            row = conn.execute("SELECT value FROM settings WHERE key='day_start_hour'").fetchone()
+            if not row:
+                return DEFAULT_DAY_START_HOUR
+            hour = int(row["value"])
+            return max(0, min(23, hour))
+    except Exception:
+        return DEFAULT_DAY_START_HOUR
+
 def local_today_str():
-    return datetime.now().strftime("%Y-%m-%d")
+    now = datetime.now()
+    cutoff_hour = get_day_start_hour()
+    if now.hour < cutoff_hour:
+        now = now - timedelta(days=1)
+    return now.strftime("%Y-%m-%d")
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -47,6 +66,26 @@ def init_db():
                 thought_date TEXT NOT NULL,
                 text TEXT NOT NULL,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS thought_groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thought_date TEXT NOT NULL,
+                emoji TEXT NOT NULL DEFAULT '💭',
+                title TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS thought_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_id INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                source_thought_id INTEGER UNIQUE,
+                FOREIGN KEY(group_id) REFERENCES thought_groups(id)
             )
         """)
 
@@ -98,7 +137,8 @@ def init_db():
             "focus": "",
             "reminder_enabled": "0",
             "reminder_time": "22:30",
-            "theme": "light"
+            "theme": "light",
+            "day_start_hour": str(DEFAULT_DAY_START_HOUR)
         }
         for key, value in defaults.items():
             conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)", (key, value))
@@ -115,6 +155,46 @@ def init_db():
 
 def dicts(rows):
     return [dict(r) for r in rows]
+
+
+def ensure_default_thought_group(conn, thought_date):
+    row = conn.execute(
+        "SELECT id FROM thought_groups WHERE thought_date=? AND emoji=? AND title=? ORDER BY id LIMIT 1",
+        (thought_date, "💭", "未分类小感想")
+    ).fetchone()
+    if row:
+        return row["id"]
+    cur = conn.execute(
+        "INSERT INTO thought_groups(thought_date,emoji,title,created_at) VALUES(?,?,?,?)",
+        (thought_date, "💭", "未分类小感想", local_now_str())
+    )
+    return cur.lastrowid
+
+def migrate_legacy_thoughts(conn):
+    if not table_exists(conn, "daily_thoughts"):
+        return
+    rows = conn.execute(
+        "SELECT id,thought_date,text,created_at FROM daily_thoughts ORDER BY thought_date, id"
+    ).fetchall()
+    for row in rows:
+        group_id = ensure_default_thought_group(conn, row["thought_date"])
+        conn.execute(
+            "INSERT OR IGNORE INTO thought_items(group_id,text,created_at,source_thought_id) VALUES(?,?,?,?)",
+            (group_id, row["text"], row["created_at"], row["id"])
+        )
+
+def get_thought_groups(conn, thought_date):
+    groups = dicts(conn.execute(
+        "SELECT id,thought_date,emoji,title,created_at FROM thought_groups WHERE thought_date=? ORDER BY id DESC",
+        (thought_date,)
+    ).fetchall())
+    for group in groups:
+        group["items"] = dicts(conn.execute(
+            "SELECT id,group_id,text,created_at FROM thought_items WHERE group_id=? ORDER BY id DESC",
+            (group["id"],)
+        ).fetchall())
+    return groups
+
 
 def get_note(conn, note_date):
     row = conn.execute("SELECT note_date,tomorrow_note,updated_at FROM day_notes WHERE note_date=?", (note_date,)).fetchone()
@@ -184,7 +264,7 @@ def state():
         yesterday = (datetime.strptime(today, "%Y-%m-%d").date() - timedelta(days=1)).isoformat()
     except ValueError:
         today = local_today_str()
-        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        yesterday = (datetime.strptime(today, "%Y-%m-%d").date() - timedelta(days=1)).isoformat()
     with get_conn() as conn:
         archive_expired_tasks(conn)
         today_done = dicts(conn.execute(
@@ -203,6 +283,8 @@ def state():
             "SELECT id, thought_date, text, created_at FROM daily_thoughts WHERE thought_date=? ORDER BY id DESC",
             (yesterday,)
         ).fetchall())
+        today_thought_groups = get_thought_groups(conn, today)
+        yesterday_thought_groups = get_thought_groups(conn, yesterday)
         active_tasks = dicts(conn.execute(
             "SELECT id,title,due_date,due_time,note,status,created_at FROM tasks WHERE status='active' ORDER BY COALESCE(due_date,'9999-99-99'), COALESCE(due_time,'23:59'), id"
         ).fetchall())
@@ -224,6 +306,8 @@ def state():
         "yesterday_done": yesterday_done,
         "today_thoughts": today_thoughts,
         "yesterday_thoughts": yesterday_thoughts,
+        "today_thought_groups": today_thought_groups,
+        "yesterday_thought_groups": yesterday_thought_groups,
         "active_tasks": active_tasks,
         "today_completed_tasks": today_completed_tasks,
         "yesterday_completed_tasks": yesterday_completed_tasks,
@@ -232,6 +316,7 @@ def state():
         "focus": settings.get("focus", ""),
         "reminder_enabled": settings.get("reminder_enabled", "0"),
         "reminder_time": settings.get("reminder_time", "22:30"),
+        "day_start_hour": settings.get("day_start_hour", str(DEFAULT_DAY_START_HOUR)),
         "theme": settings.get("theme", "light")
     })
 
@@ -345,6 +430,59 @@ def delete_task(task_id):
     return jsonify({"ok": True})
 
 
+
+@app.route("/api/thought_groups", methods=["POST"])
+def add_thought_group():
+    init_db()
+    data = request.get_json(silent=True) or {}
+    emoji = (data.get("emoji") or "💭").strip() or "💭"
+    title = (data.get("title") or "").strip()
+    thought_date = data.get("thought_date") or local_today_str()
+    now = local_now_str()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO thought_groups(thought_date,emoji,title,created_at) VALUES(?,?,?,?)",
+            (thought_date, emoji[:8], title[:80], now)
+        )
+        conn.commit()
+    return jsonify({"id": cur.lastrowid, "thought_date": thought_date, "emoji": emoji[:8], "title": title[:80], "created_at": now, "items": []}), 201
+
+@app.route("/api/thought_groups/<int:group_id>", methods=["DELETE"])
+def delete_thought_group(group_id):
+    init_db()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM thought_items WHERE group_id=?", (group_id,))
+        conn.execute("DELETE FROM thought_groups WHERE id=?", (group_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/thought_groups/<int:group_id>/items", methods=["POST"])
+def add_thought_item(group_id):
+    init_db()
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", "").strip()
+    now = local_now_str()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    with get_conn() as conn:
+        row = conn.execute("SELECT id FROM thought_groups WHERE id=?", (group_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "thought group not found"}), 404
+        cur = conn.execute(
+            "INSERT INTO thought_items(group_id,text,created_at) VALUES(?,?,?)",
+            (group_id, text, now)
+        )
+        conn.commit()
+    return jsonify({"id": cur.lastrowid, "group_id": group_id, "text": text, "created_at": now}), 201
+
+@app.route("/api/thought_items/<int:item_id>", methods=["DELETE"])
+def delete_thought_item(item_id):
+    init_db()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM thought_items WHERE id=?", (item_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
 @app.route("/api/thoughts", methods=["POST"])
 def add_thought():
     init_db()
@@ -358,6 +496,11 @@ def add_thought():
         cur = conn.execute(
             "INSERT INTO daily_thoughts(thought_date,text,created_at) VALUES(?,?,?)",
             (thought_date, text, now)
+        )
+        group_id = ensure_default_thought_group(conn, thought_date)
+        conn.execute(
+            "INSERT OR IGNORE INTO thought_items(group_id,text,created_at,source_thought_id) VALUES(?,?,?,?)",
+            (group_id, text, now, cur.lastrowid)
         )
         conn.commit()
     return jsonify({"id": cur.lastrowid, "thought_date": thought_date, "text": text, "created_at": now}), 201
@@ -386,15 +529,22 @@ def save_note():
 
 @app.route("/api/settings", methods=["POST"])
 def update_settings():
+    init_db()
     data = request.get_json(silent=True) or {}
-    allowed = {"focus", "reminder_enabled", "reminder_time", "theme"}
+    allowed = {"focus", "reminder_enabled", "reminder_time", "theme", "day_start_hour"}
     with get_conn() as conn:
         for key, value in data.items():
-            if key in allowed:
-                conn.execute(
-                    "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                    (key, str(value))
-                )
+            if key not in allowed:
+                continue
+            if key == "day_start_hour":
+                try:
+                    value = str(max(0, min(23, int(value))))
+                except (TypeError, ValueError):
+                    value = str(DEFAULT_DAY_START_HOUR)
+            conn.execute(
+                "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, str(value))
+            )
         conn.commit()
     return jsonify({"ok": True})
 
