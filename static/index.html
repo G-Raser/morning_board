@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.4.4</title>
+<title>醒来先看 v1.5.2</title>
 <script>
 (function(){
   try{
@@ -70,6 +70,89 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
 .time-picker{flex:1.35 1 180px;min-width:170px}
 .date-picker input,.time-picker input{font-variant-numeric:tabular-nums}
 #taskDue,#taskTime{font-size:17px}
+
+.thought-grid{
+  list-style:none;
+  padding:0;
+  margin:12px 0 0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:flex-start;
+}
+.thought-grid .thought-card{
+  position:relative;
+  display:block;
+  width:fit-content;
+  min-width:110px;
+  max-width:min(320px,100%);
+  padding:11px 38px 10px 14px;
+  border-radius:20px 20px 18px 18px;
+  border:1px solid rgba(255,255,255,.24);
+  background:#e2c48d;
+  color:#2c2116;
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+  transform:rotate(-.2deg);
+}
+.thought-grid .thought-card.read-only{
+  padding-right:14px;
+}
+.thought-grid .thought-card:nth-child(5n+1){background:#e8d1a2;transform:rotate(-.4deg)}
+.thought-grid .thought-card:nth-child(5n+2){background:#d9b978;transform:rotate(.35deg)}
+.thought-grid .thought-card:nth-child(5n+3){background:#eadbb8;transform:rotate(-.15deg)}
+.thought-grid .thought-card:nth-child(5n+4){background:#cfaa6d;transform:rotate(.25deg)}
+.thought-grid .thought-card:nth-child(5n+5){background:#dfc28c;transform:rotate(-.3deg)}
+.thought-grid .thought-text{
+  font-weight:700;
+  line-height:1.45;
+  word-break:break-word;
+}
+.thought-grid .thought-time{
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.25;
+  color:rgba(44,33,22,.68);
+}
+.thought-grid .thought-delete{
+  position:absolute;
+  top:7px;
+  right:7px;
+  width:26px;
+  height:26px;
+  min-width:0;
+  padding:0!important;
+  border:0;
+  border-radius:999px;
+  background:rgba(107,43,43,.18);
+  color:#6b2b2b;
+  font-size:18px;
+  line-height:24px;
+  font-weight:800;
+  box-shadow:none;
+}
+.thought-grid .thought-delete:hover{
+  background:rgba(107,43,43,.28);
+}
+.thought-grid .thought-empty{
+  width:100%;
+  display:block;
+  border:1px dashed var(--line);
+  background:transparent;
+  box-shadow:none;
+}
+html.dark .thought-grid .thought-card{
+  border-color:rgba(255,255,255,.16);
+  box-shadow:0 8px 22px rgba(0,0,0,.24);
+}
+@media(max-width:520px){
+  .thought-grid{gap:8px}
+  .thought-grid .thought-card{
+    max-width:100%;
+    min-width:96px;
+    padding:10px 36px 9px 13px;
+  }
+}
+
 @media(max-width:520px){
   .date-picker{min-width:210px}
   .time-picker{min-width:160px}
@@ -152,6 +235,8 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
     <div class="card white">
       <h3>昨天已经完成</h3>
       <ul id="yesterdayDoneList"></ul>
+      <h3 style="margin-top:16px">昨天的小感想</h3>
+      <ul id="yesterdayThoughtList" class="thought-grid"></ul>
       <h3 style="margin-top:16px">昨天归档的 DDL</h3>
       <ul id="yesterdayCompletedList"></ul>
     </div>
@@ -180,6 +265,12 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
         <button id="addDoneBtn">记录完成</button>
       </div>
       <ul id="todayDoneList"></ul>
+      <h3 style="margin-top:16px">今天的小感想</h3>
+      <div class="row">
+        <input id="thoughtInput" placeholder="比如：这个知识点好难，明天要多看看喵">
+        <button id="addThoughtBtn">记一条</button>
+      </div>
+      <ul id="todayThoughtList" class="thought-grid"></ul>
       <h3 style="margin-top:16px">今天归档的 DDL</h3>
       <ul id="todayCompletedList"></ul>
     </div>
@@ -290,6 +381,10 @@ async function load(date){const d=date||$("todayDate").value||localISO();state=a
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function empty(text){return `<li><div class="empty">${text}</div></li>`}
 function listDone(el,arr){el.innerHTML=arr.length?arr.map(x=>`<li><div class="task-main"><div class="task-title">${escapeHtml(x.text)}</div><div class="task-meta">${escapeHtml(x.created_at||"")}</div></div><button class="danger" data-delete-done="${x.id}">删除</button></li>`).join(""):empty("这里还空着。空着也不算失败喵。")}
+function listThoughts(el,arr,editable=false){
+  el.classList.add("thought-grid");
+  el.innerHTML=arr.length?arr.map(x=>`<li class="thought-card ${editable?"":"read-only"}"><div class="thought-text">${escapeHtml(x.text)}</div><div class="thought-time">${escapeHtml(x.created_at||"")}</div>${editable?`<button class="thought-delete" data-delete-thought="${x.id}" title="删除">×</button>`:""}</li>`).join(""):`<li class="thought-empty"><div class="empty">还没有小感想。</div></li>`;
+}
 function archiveMeta(x){
   if(x.status==="expired")return `已过期归档：${escapeHtml(x.archived_at||"")}`;
   return `完成于：${escapeHtml(x.completed_at||x.archived_at||"")}`;
@@ -340,6 +435,8 @@ $("tomorrowNoteInput").value=state.today_note?.tomorrow_note||"";
 $("yesterdayNote").textContent=state.yesterday_note?.tomorrow_note||"还没有留言。今晚可以给明天的自己留一条喵。";
 listDone($("yesterdayDoneList"),state.yesterday_done||[]);
 listDone($("todayDoneList"),state.today_done||[]);
+listThoughts($("yesterdayThoughtList"),state.yesterday_thoughts||[],false);
+listThoughts($("todayThoughtList"),state.today_thoughts||[],true);
 listCompleted($("yesterdayCompletedList"),state.yesterday_completed_tasks||[]);
 listCompleted($("todayCompletedList"),state.today_completed_tasks||[]);
 listActive($("activeTaskList"),state.active_tasks||[]);
@@ -353,6 +450,8 @@ $("todayDate").value=localISO();
 $("todayBtn").onclick=()=>load(localISO());
 $("themeBtn").onclick=async()=>saveSettings({theme:document.documentElement.classList.contains("dark")?"light":"dark"});
 $("addDoneBtn").onclick=async()=>{const text=$("doneInput").value.trim();if(!text)return;await api("/api/done",{method:"POST",body:JSON.stringify({text,done_date:$("todayDate").value})});$("doneInput").value="";await load()};
+$("addThoughtBtn").onclick=async()=>{const text=$("thoughtInput").value.trim();if(!text)return;await api("/api/thoughts",{method:"POST",body:JSON.stringify({text,thought_date:$("todayDate").value})});$("thoughtInput").value="";await load();showToast("小感想已记下喵")};
+
 $("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();showToast("已保存给明天喵")};
 $("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
@@ -467,6 +566,7 @@ document.body.onclick=async e=>{
   if(!btn)return;
   const doneId=btn.dataset.deleteDone;
   const taskId=btn.dataset.deleteTask;
+  const thoughtId=btn.dataset.deleteThought;
   const completeId=btn.dataset.completeTask;
   const reactivateId=btn.dataset.reactivateTask;
   const editDueId=btn.dataset.editDueTask;
@@ -474,6 +574,14 @@ document.body.onclick=async e=>{
     const ok=await confirmCat({title:"删除完成记录？",message:"这条完成记录会被删除喵。",okText:"删除",danger:true});
     if(ok){
       await api(`/api/done/${doneId}`,{method:"DELETE"});
+      await load();
+      showToast("已删除喵");
+    }
+  }
+  if(thoughtId){
+    const ok=await confirmCat({title:"删除这条小感想？",message:"删掉后就不在今天记录里显示了喵。",okText:"删除",danger:true});
+    if(ok){
+      await api(`/api/thoughts/${thoughtId}`,{method:"DELETE"});
       await load();
       showToast("已删除喵");
     }
@@ -519,7 +627,7 @@ async function copyTextWithFallback(text){
     setTimeout(()=>{$("copyText").focus();$("copyText").select()},50);
   }
 }
-$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
+$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`昨天的小感想（${state.yesterday}）：`,...(state.yesterday_thoughts||[]).map(x=>`- ${x.text}`),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"",`今天的小感想（${state.today}）：`,...(state.today_thoughts||[]).map(x=>`- ${x.text}`),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
 $("todayDate").onchange=()=>load($("todayDate").value);
 
 function bindCopyModal(){

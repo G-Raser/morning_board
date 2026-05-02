@@ -42,6 +42,15 @@ def init_db():
             )
         """)
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS daily_thoughts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thought_date TEXT NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
@@ -169,6 +178,7 @@ def index():
 
 @app.route("/api/state")
 def state():
+    init_db()
     today = request.args.get("date") or local_today_str()
     try:
         yesterday = (datetime.strptime(today, "%Y-%m-%d").date() - timedelta(days=1)).isoformat()
@@ -183,6 +193,14 @@ def state():
         ).fetchall())
         yesterday_done = dicts(conn.execute(
             "SELECT id, done_date, text, created_at FROM daily_done WHERE done_date=? ORDER BY id DESC",
+            (yesterday,)
+        ).fetchall())
+        today_thoughts = dicts(conn.execute(
+            "SELECT id, thought_date, text, created_at FROM daily_thoughts WHERE thought_date=? ORDER BY id DESC",
+            (today,)
+        ).fetchall())
+        yesterday_thoughts = dicts(conn.execute(
+            "SELECT id, thought_date, text, created_at FROM daily_thoughts WHERE thought_date=? ORDER BY id DESC",
             (yesterday,)
         ).fetchall())
         active_tasks = dicts(conn.execute(
@@ -204,6 +222,8 @@ def state():
         "yesterday": yesterday,
         "today_done": today_done,
         "yesterday_done": yesterday_done,
+        "today_thoughts": today_thoughts,
+        "yesterday_thoughts": yesterday_thoughts,
         "active_tasks": active_tasks,
         "today_completed_tasks": today_completed_tasks,
         "yesterday_completed_tasks": yesterday_completed_tasks,
@@ -324,6 +344,31 @@ def delete_task(task_id):
         conn.commit()
     return jsonify({"ok": True})
 
+
+@app.route("/api/thoughts", methods=["POST"])
+def add_thought():
+    init_db()
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", "").strip()
+    thought_date = data.get("thought_date") or local_today_str()
+    now = local_now_str()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO daily_thoughts(thought_date,text,created_at) VALUES(?,?,?)",
+            (thought_date, text, now)
+        )
+        conn.commit()
+    return jsonify({"id": cur.lastrowid, "thought_date": thought_date, "text": text, "created_at": now}), 201
+
+@app.route("/api/thoughts/<int:thought_id>", methods=["DELETE"])
+def delete_thought(thought_id):
+    with get_conn() as conn:
+        conn.execute("DELETE FROM daily_thoughts WHERE id=?", (thought_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
 @app.route("/api/notes", methods=["POST"])
 def save_note():
     data = request.get_json(silent=True) or {}
@@ -358,4 +403,3 @@ if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=5001, debug=True)
     app.run(host="100.97.142.99", port=5001, debug=True)
     # app.run(host="100.97.142.99", port=5000, debug=False)
-
