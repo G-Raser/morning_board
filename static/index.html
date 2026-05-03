@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.7.2</title>
+<title>醒来先看 v1.7.7</title>
 <script>
 (function(){
   try{
@@ -301,6 +301,32 @@ html.dark .thought-section{
   font-size:11px;
   color:var(--muted);
 }
+
+.thought-item-chip.has-actions{
+  padding-right:62px;
+}
+.thought-item-move{
+  position:absolute;
+  top:7px;
+  right:33px;
+  width:23px;
+  height:23px;
+  min-width:0;
+  padding:0!important;
+  border-radius:999px;
+  border:0;
+  background:rgba(224,196,143,.22);
+  color:#6b4e24;
+  font-size:13px;
+  line-height:21px;
+  font-weight:900;
+  box-shadow:none!important;
+}
+html.dark .thought-item-move{
+  background:rgba(224,196,143,.20);
+  color:#ead7b3;
+}
+
 .thought-item-delete,
 .thought-group-delete{
   position:absolute;
@@ -794,6 +820,47 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
   .settings-grid .settings-card .row > button{width:100%}
 }
 
+
+.telegram-box.simple{
+  margin-top:10px;
+  padding-top:0;
+  border-top:0;
+}
+.telegram-only-row{
+  display:grid;
+  grid-template-columns:220px auto minmax(120px,170px) minmax(220px,1fr) auto auto;
+  gap:10px;
+  align-items:end;
+}
+.telegram-only-row > label:first-child{
+  min-width:0;
+}
+.telegram-only-row .telegram-check{
+  padding-bottom:11px;
+}
+.telegram-only-row .time-picker{
+  max-width:220px;
+}
+@media(max-width:1050px){
+  .telegram-only-row{
+    grid-template-columns:220px auto 1fr;
+  }
+  .telegram-only-row button{
+    width:fit-content;
+  }
+}
+@media(max-width:650px){
+  .telegram-only-row{
+    grid-template-columns:1fr;
+  }
+  .telegram-only-row .telegram-check{
+    padding-bottom:0;
+  }
+  .telegram-only-row .time-picker{
+    max-width:none;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -899,15 +966,19 @@ html.dark .cat-modal .picker-btn:hover{background:#5b4964}
 
 <div class="settings-grid">
 <section class="card settings-card">
-  <h2>每日提醒</h2>
-  <p class="muted">到点提醒你更新“今天写给明天看的”这一板。浏览器页面开着最稳。</p>
-  <div class="row">
-    <label style="flex:1">提醒时间<div class="input-picker time-picker"><input id="reminderTime" type="time"><button type="button" class="picker-btn" data-picker="reminderTime" aria-label="选择提醒时间">⏰</button></div></label>
-    <label class="row" style="margin:0"><input id="reminderEnabled" type="checkbox"> 开启每日提醒</label>
-    <button id="saveReminderBtn">保存提醒</button>
-    <button class="light" id="testReminderBtn">测试提醒</button>
+  <h2>Telegram 定时提醒</h2>
+  <p class="muted">到点推送到 Telegram。只要后端正在运行，就不需要一直开着网页。</p>
+  <div class="telegram-box simple">
+    <div class="telegram-row telegram-only-row">
+      <label>提醒时间<div class="input-picker time-picker"><input id="reminderTime" type="time"><button type="button" class="picker-btn" data-picker="reminderTime" aria-label="选择提醒时间">⏰</button></div></label>
+      <label class="row telegram-check" style="margin:0"><input id="telegramEnabled" type="checkbox"> 开启 Telegram 推送</label>
+      <input id="telegramChatId" placeholder="chat_id">
+      <input id="telegramBotToken" type="password" placeholder="bot token，留空=不修改">
+      <button id="saveTelegramBtn">保存提醒</button>
+      <button class="light" id="testTelegramBtn">测试 Telegram</button>
+    </div>
+    <div class="notice" id="telegramTokenNote">还没有保存 token。</div>
   </div>
-  <div class="notice">提醒依赖浏览器通知：电脑要开着，后端要运行，浏览器要允许通知。更强提醒可以再配系统日历/任务计划。</div>
 </section>
 
 <section class="card settings-card">
@@ -1034,7 +1105,7 @@ function listThoughtGroups(el,arr,editable=false){
     const items=g.items||[];
     const open=openThoughtGroups.has(id);
     const name=groupTitle(g);
-    const itemHtml=items.length?items.map(item=>`<li class="thought-item-chip ${editable?"":"read-only"}"><div class="thought-item-text">${escapeHtml(item.text)}</div><div class="thought-item-time">${escapeHtml(item.created_at||"")}</div>${editable?`<button class="thought-item-delete" data-delete-thought-item="${item.id}" title="删除">×</button>`:""}</li>`).join(""):`<li class="thought-item-chip read-only"><div class="thought-item-text muted">这里还没有具体小句子喵。</div></li>`;
+    const itemHtml=items.length?items.map(item=>`<li class="thought-item-chip ${editable?"has-actions":"read-only"}"><div class="thought-item-text">${escapeHtml(item.text)}</div><div class="thought-item-time">${escapeHtml(item.created_at||"")}</div>${editable?`<button class="thought-item-move" data-move-thought-item="${item.id}" title="移动到别的 emoji">↪</button><button class="thought-item-delete" data-delete-thought-item="${item.id}" title="删除">×</button>`:""}</li>`).join(""):`<li class="thought-item-chip read-only"><div class="thought-item-text muted">这里还没有具体小句子喵。</div></li>`;
     return `<li class="thought-group-card ${open?"open":""}" data-thought-group-id="${id}">
       <button type="button" class="thought-bubble" data-toggle-thought-group="${id}" title="${escapeHtml(name)} · ${items.length} 条" aria-label="${escapeHtml(name)}，${items.length} 条">
         <span class="thought-emoji">${escapeHtml(g.emoji||"💭")}</span>
@@ -1103,7 +1174,11 @@ function render(){
 $("todayDate").value=state.today||localISO();
 document.documentElement.classList.toggle("dark",state.theme==="dark");
 try{localStorage.setItem("morning-board-theme",state.theme||"light")}catch(e){}
-$("reminderEnabled").checked=state.reminder_enabled==="1";$("reminderTime").value=state.reminder_time||"22:30";
+$("reminderTime").value=state.reminder_time||"22:30";
+$("telegramEnabled").checked=state.telegram_enabled==="1";
+$("telegramChatId").value=state.telegram_chat_id||"";
+$("telegramBotToken").value="";
+$("telegramTokenNote").textContent=state.telegram_has_token==="1"?"Token 已保存。需要更换时再填新 token 喵。":"还没有保存 token。";
 const dayStartHour=String(Math.max(0,Math.min(23,Number(state.day_start_hour??5)))).padStart(2,"0");
 $("dayStartTime").value=`${dayStartHour}:00`;
 $("tomorrowNoteInput").value=state.today_note?.tomorrow_note||"";
@@ -1120,7 +1195,6 @@ async function saveSettings(patch){await api("/api/settings",{method:"POST",body
 async function requestNotifyPermission(){if(!("Notification" in window))return false;if(Notification.permission==="granted")return true;if(Notification.permission!=="denied"){const p=await Notification.requestPermission();return p==="granted"}return false}
 async function showReminder(test=false){const title=test?"测试提醒：该投喂明天了":"该写给明天的自己了";const body="简单写：今天做完了什么，明天先看什么。两行也算胜利喵。";if(await requestNotifyPermission()){new Notification(title,{body})}else{alert(title+"\\n"+body)}}
 function checkReminder(){if(state.reminder_enabled!=="1")return;const t=state.reminder_time||"22:30";if(nowHHMM()!==t)return;const key=`reminded-${state?.today||boardTodayISO()}-${t}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");showReminder(false)}
-setInterval(checkReminder,30000);
 $("todayDate").value="";
 $("todayBtn").onclick=()=>load("");
 $("themeBtn").onclick=async()=>saveSettings({theme:document.documentElement.classList.contains("dark")?"light":"dark"});
@@ -1136,14 +1210,34 @@ $("addThoughtGroupBtn").onclick=async()=>{
 
 $("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();showToast("已保存给明天喵")};
-$("saveReminderBtn").onclick=async()=>{const enabled=$("reminderEnabled").checked?"1":"0";const time=$("reminderTime").value||"22:30";if(enabled==="1")await requestNotifyPermission();await saveSettings({reminder_enabled:enabled,reminder_time:time});alert("提醒设置已保存")};
 $("saveDayStartBtn").onclick=async()=>{
   const time=$("dayStartTime").value||"05:00";
   const hour=Number((time.split(":")[0]||"5"));
   await saveSettings({day_start_hour:Number.isFinite(hour)?hour:5});
   showToast("每日切换时间已保存喵");
 };
-$("testReminderBtn").onclick=()=>showReminder(true);
+
+$("saveTelegramBtn").onclick=async()=>{
+  const patch={
+    reminder_enabled:$("telegramEnabled").checked?"1":"0",
+    reminder_time:$("reminderTime").value||"22:30",
+    telegram_enabled:$("telegramEnabled").checked?"1":"0",
+    telegram_chat_id:$("telegramChatId").value.trim()
+  };
+  const token=$("telegramBotToken").value.trim();
+  if(token)patch.telegram_bot_token=token;
+  await saveSettings(patch);
+  showToast("Telegram 提醒设置已保存喵");
+};
+$("testTelegramBtn").onclick=async()=>{
+  try{
+    await api("/api/telegram/test",{method:"POST",body:JSON.stringify({})});
+    showToast("Telegram 测试通知已发送喵");
+  }catch(e){
+    await openCatModal({title:"Telegram 测试失败",message:e.message,fields:[],okText:"知道了"});
+  }
+};
+
 let toastTimer=null;
 function showToast(msg){
   const el=$("toast");
@@ -1273,6 +1367,7 @@ document.body.onclick=async e=>{
   const deleteThoughtGroup=btn.dataset.deleteThoughtGroup;
   const addThoughtItem=btn.dataset.addThoughtItem;
   const deleteThoughtItem=btn.dataset.deleteThoughtItem;
+  const moveThoughtItem=btn.dataset.moveThoughtItem;
   const completeId=btn.dataset.completeTask;
   const reactivateId=btn.dataset.reactivateTask;
   const editDueId=btn.dataset.editDueTask;
@@ -1299,6 +1394,13 @@ document.body.onclick=async e=>{
     openThoughtGroups.add(String(addThoughtItem));
     await load();
     showToast("小句子已投进去喵");
+  }
+  if(moveThoughtItem){
+    const emoji=await askMoveThoughtItemEmoji();
+    if(!emoji)return;
+    await api(`/api/thought_items/${moveThoughtItem}/move`,{method:"POST",body:JSON.stringify({emoji})});
+    await load();
+    showToast(`已移动到 ${emoji} 喵`);
   }
   if(deleteThoughtItem){
     const ok=await confirmCat({title:"删除这条小句子？",message:"删掉后就不在这个 emoji 气泡里显示了喵。",okText:"删除",danger:true});
@@ -1350,6 +1452,23 @@ document.body.onclick=async e=>{
     await load();
   }
 };
+
+
+async function askMoveThoughtItemEmoji(){
+  const result=await openCatModal({
+    title:"移动到哪个 emoji？",
+    message:"输入目标 emoji。没有对应气泡的话，会自动新建一个喵。",
+    fields:[{id:"modalMoveEmoji",type:"text",label:"目标 emoji",value:"😊",required:true}],
+    okText:"移动"
+  });
+  if(result===null)return null;
+  const emoji=(result.modalMoveEmoji||"").trim();
+  if(!emoji){
+    await openCatModal({title:"还没填 emoji 喵",message:"请输入一个目标 emoji。",fields:[],okText:"知道了"});
+    return null;
+  }
+  return emoji;
+}
 
 async function copyTextWithFallback(text){
   try{

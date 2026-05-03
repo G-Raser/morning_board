@@ -1,10 +1,10 @@
 # Changelog
 
-## v1.7.0
+## v1.7.7
 
-- 新增“每日切换时间”设置。
-- 默认 `05:00` 才切换到新的一天。
-- 修复午夜 00:00 后页面自动进入下一天，导致熬夜时无法继续编辑当前存档的问题。
-- 后端新增 `DEFAULT_DAY_START_HOUR`、`get_day_start_hour()`。
-- `/api/state` 返回 `day_start_hour`。
-- `/api/settings` 支持保存 `day_start_hour`。
+- 移除旧浏览器通知 UI。
+- 提醒设置区改成 Telegram-only。
+- 新增/保留 Telegram 推送后台线程。
+- `保存提醒` 同时保存提醒时间和 Telegram 开关。
+- 保留 `/api/telegram/test` 测试推送。
+- 保留 v1.7.5 小感想移动分类功能。

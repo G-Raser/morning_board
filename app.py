@@ -3,6 +3,11 @@ from flask_cors import CORS
 from pathlib import Path
 import sqlite3
 from datetime import date, datetime, timedelta
+import json
+import threading
+import time
+import urllib.request
+import urllib.error
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "morning_board.db"
@@ -138,7 +143,11 @@ def init_db():
             "reminder_enabled": "0",
             "reminder_time": "22:30",
             "theme": "light",
-            "day_start_hour": str(DEFAULT_DAY_START_HOUR)
+            "day_start_hour": str(DEFAULT_DAY_START_HOUR),
+            "telegram_enabled": "0",
+            "telegram_bot_token": "",
+            "telegram_chat_id": "",
+            "telegram_last_sent_key": ""
         }
         for key, value in defaults.items():
             conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)", (key, value))
@@ -151,10 +160,87 @@ def init_db():
                         INSERT INTO daily_done(done_date, text, created_at)
                         SELECT date(created_at), text, created_at FROM done_items
                     """)
+        migrate_legacy_thoughts(conn)
         conn.commit()
 
 def dicts(rows):
     return [dict(r) for r in rows]
+
+
+def get_settings(conn):
+    return {r["key"]: r["value"] for r in conn.execute("SELECT key,value FROM settings").fetchall()}
+
+def send_telegram_message(bot_token, chat_id, text):
+    if not bot_token or not chat_id:
+        raise ValueError("Telegram bot token or chat id is empty")
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = json.dumps({
+        "chat_id": str(chat_id),
+        "text": text
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        body = resp.read().decode("utf-8", errors="replace")
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        data = {"ok": False, "raw": body}
+    if not data.get("ok"):
+        raise RuntimeError(f"Telegram API error: {data}")
+    return data
+
+def minutes_from_hhmm(value):
+    try:
+        hh, mm = str(value).split(":")[:2]
+        return int(hh) * 60 + int(mm)
+    except Exception:
+        return None
+
+def telegram_reminder_loop():
+    while True:
+        try:
+            init_db()
+            now = datetime.now()
+            current_minutes = now.hour * 60 + now.minute
+            today = local_today_str()
+            with get_conn() as conn:
+                settings = get_settings(conn)
+                if settings.get("reminder_enabled") == "1" and settings.get("telegram_enabled") == "1":
+                    reminder_time = settings.get("reminder_time", "22:30")
+                    target_minutes = minutes_from_hhmm(reminder_time)
+                    if target_minutes is not None and 0 <= current_minutes - target_minutes <= 2:
+                        send_key = f"{today}-{reminder_time}"
+                        if settings.get("telegram_last_sent_key", "") != send_key:
+                            msg = "该写今天完成了什么、明天先看什么了喵。两行也算胜利喵。"
+                            send_telegram_message(
+                                settings.get("telegram_bot_token", ""),
+                                settings.get("telegram_chat_id", ""),
+                                msg
+                            )
+                            conn.execute(
+                                "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                                ("telegram_last_sent_key", send_key)
+                            )
+                            conn.commit()
+        except Exception as e:
+            print("[telegram reminder error]", e)
+        time.sleep(20)
+
+_scheduler_started = False
+
+def start_background_scheduler():
+    global _scheduler_started
+    if _scheduler_started:
+        return
+    _scheduler_started = True
+    thread = threading.Thread(target=telegram_reminder_loop, daemon=True)
+    thread.start()
+
 
 
 def ensure_default_thought_group(conn, thought_date):
@@ -266,6 +352,7 @@ def state():
         today = local_today_str()
         yesterday = (datetime.strptime(today, "%Y-%m-%d").date() - timedelta(days=1)).isoformat()
     with get_conn() as conn:
+        migrate_legacy_thoughts(conn)
         archive_expired_tasks(conn)
         today_done = dicts(conn.execute(
             "SELECT id, done_date, text, created_at FROM daily_done WHERE done_date=? ORDER BY id DESC",
@@ -296,7 +383,7 @@ def state():
             "SELECT id,title,due_date,due_time,note,status,completed_at,completed_date,archived_at,archived_date,archive_reason,created_at FROM tasks WHERE status IN ('completed','expired') AND archived_date=? ORDER BY archived_at DESC, id DESC",
             (yesterday,)
         ).fetchall())
-        settings = {r["key"]: r["value"] for r in conn.execute("SELECT key,value FROM settings").fetchall()}
+        settings = get_settings(conn)
         today_note = get_note(conn, today)
         yesterday_note = get_note(conn, yesterday)
     return jsonify({
@@ -317,6 +404,9 @@ def state():
         "reminder_enabled": settings.get("reminder_enabled", "0"),
         "reminder_time": settings.get("reminder_time", "22:30"),
         "day_start_hour": settings.get("day_start_hour", str(DEFAULT_DAY_START_HOUR)),
+        "telegram_enabled": settings.get("telegram_enabled", "0"),
+        "telegram_chat_id": settings.get("telegram_chat_id", ""),
+        "telegram_has_token": "1" if settings.get("telegram_bot_token", "") else "0",
         "theme": settings.get("theme", "light")
     })
 
@@ -475,6 +565,45 @@ def add_thought_item(group_id):
         conn.commit()
     return jsonify({"id": cur.lastrowid, "group_id": group_id, "text": text, "created_at": now}), 201
 
+
+@app.route("/api/thought_items/<int:item_id>/move", methods=["POST"])
+def move_thought_item(item_id):
+    init_db()
+    data = request.get_json(silent=True) or {}
+    emoji = (data.get("emoji") or "").strip()
+    if not emoji:
+        return jsonify({"error": "emoji is required"}), 400
+    emoji = emoji[:8]
+    with get_conn() as conn:
+        item = conn.execute("""
+            SELECT thought_items.id, thought_items.group_id, thought_items.text, thought_groups.thought_date
+            FROM thought_items
+            JOIN thought_groups ON thought_items.group_id = thought_groups.id
+            WHERE thought_items.id=?
+        """, (item_id,)).fetchone()
+        if not item:
+            return jsonify({"error": "thought item not found"}), 404
+        thought_date = item["thought_date"]
+        target_title = "未分类小感想" if emoji == "💭" else ""
+        target = conn.execute(
+            "SELECT id FROM thought_groups WHERE thought_date=? AND emoji=? AND title=? ORDER BY id LIMIT 1",
+            (thought_date, emoji, target_title)
+        ).fetchone()
+        if target:
+            target_id = target["id"]
+        else:
+            cur = conn.execute(
+                "INSERT INTO thought_groups(thought_date,emoji,title,created_at) VALUES(?,?,?,?)",
+                (thought_date, emoji, target_title, local_now_str())
+            )
+            target_id = cur.lastrowid
+        conn.execute(
+            "UPDATE thought_items SET group_id=? WHERE id=?",
+            (target_id, item_id)
+        )
+        conn.commit()
+    return jsonify({"ok": True, "group_id": target_id, "emoji": emoji})
+
 @app.route("/api/thought_items/<int:item_id>", methods=["DELETE"])
 def delete_thought_item(item_id):
     init_db()
@@ -527,11 +656,27 @@ def save_note():
         conn.commit()
     return jsonify({"ok": True})
 
+
+@app.route("/api/telegram/test", methods=["POST"])
+def test_telegram():
+    init_db()
+    with get_conn() as conn:
+        settings = get_settings(conn)
+    token = settings.get("telegram_bot_token", "")
+    chat_id = settings.get("telegram_chat_id", "")
+    if not token or not chat_id:
+        return jsonify({"error": "telegram bot token or chat id is empty"}), 400
+    try:
+        send_telegram_message(token, chat_id, "超级可爱喵喵酱测试通知喵")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    return jsonify({"ok": True})
+
 @app.route("/api/settings", methods=["POST"])
 def update_settings():
     init_db()
     data = request.get_json(silent=True) or {}
-    allowed = {"focus", "reminder_enabled", "reminder_time", "theme", "day_start_hour"}
+    allowed = {"focus", "reminder_enabled", "reminder_time", "theme", "day_start_hour", "telegram_enabled", "telegram_bot_token", "telegram_chat_id"}
     with get_conn() as conn:
         for key, value in data.items():
             if key not in allowed:
@@ -541,6 +686,10 @@ def update_settings():
                     value = str(max(0, min(23, int(value))))
                 except (TypeError, ValueError):
                     value = str(DEFAULT_DAY_START_HOUR)
+            if key == "telegram_bot_token" and not str(value).strip():
+                continue
+            if key in {"telegram_bot_token", "telegram_chat_id"}:
+                value = str(value).strip()
             conn.execute(
                 "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, str(value))
@@ -550,6 +699,7 @@ def update_settings():
 
 if __name__ == "__main__":
     init_db()
-    # app.run(host="127.0.0.1", port=5001, debug=True)
-    app.run(host="100.97.142.99", port=5001, debug=True)
-    # app.run(host="100.97.142.99", port=5000, debug=False)
+    start_background_scheduler()
+    # app.run(host="127.0.0.1", port=5001, debug=True, use_reloader=False)
+    app.run(host="100.97.142.99", port=5001, debug=True, use_reloader=False)
+    # app.run(host="100.97.142.99", port=5000, debug=False, use_reloader=False)
