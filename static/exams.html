@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exam Board v1.8.2</title>
+<script>
+(function(){
+  try{
+    if(localStorage.getItem("morning-board-theme")==="dark"){
+      document.documentElement.classList.add("dark");
+    }
+  }catch(e){}
+})();
+</script>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f7f3ec;--card:#fffaf3;--card2:#fff;--text:#24211c;--muted:#7a7166;--line:#e8dccb;--accent:#6d4c2f;--accent2:#f0dfc7;--danger:#991b1b;--danger-bg:#fee2e2;--good:#166534;--shadow:0 8px 24px rgba(70,45,20,.08)}
+html.dark{--bg:#17151b;--card:#24212b;--card2:#1f1c25;--text:#f4efe7;--muted:#b9ad9f;--line:#3a3443;--accent:#d6b48c;--accent2:#403444;--danger-bg:#4a2025;--danger:#fecaca;--good:#86efac;--shadow:0 8px 24px rgba(0,0,0,.28)}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:24px;overflow-x:hidden}
+.wrap{width:min(1120px,calc(100vw - 48px));margin:0 auto;display:grid;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:20px;box-shadow:var(--shadow);min-width:0}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+h1,h2,h3{margin:0}h1{font-size:31px;letter-spacing:-.02em}h2{font-size:22px}h3{font-size:16px;color:var(--muted)}
+p{margin:6px 0;color:var(--muted);line-height:1.5}
+a,button,input,textarea,select{font:inherit}
+a.back{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--accent2);color:var(--accent);text-decoration:none;font-weight:850;border:1px solid rgba(109,76,47,.12)}
+button{border:1px solid var(--line);border-radius:14px;padding:10px 13px;background:var(--accent);color:#fffaf3;font-weight:850;cursor:pointer;transition:filter .18s ease,transform .12s ease,box-shadow .18s ease}
+button:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.12)}
+button.light{background:var(--accent2);color:var(--accent)}
+button.danger{background:var(--danger-bg);color:var(--danger)}
+input,textarea,select{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card2);color:var(--text);outline:none;min-width:0;width:100%}
+textarea{min-height:84px;resize:vertical;line-height:1.5}
+label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
+.form-grid{display:grid;grid-template-columns:1fr 1.4fr 220px auto;gap:10px;align-items:end}
+.course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.course-card{position:relative;display:grid;gap:12px;background:var(--card2);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:0 8px 20px rgba(70,45,20,.06);overflow:hidden}
+.course-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:rgba(224,196,143,.55)}
+.course-card.calm::before{background:rgba(112,153,87,.55)}
+.course-card.soon::before{background:rgba(224,196,143,.75)}
+.course-card.near::before{background:rgba(217,119,6,.65)}
+.course-card.urgent::before{background:rgba(153,27,27,.62)}
+.course-card.past{opacity:.72}
+.course-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding-left:4px}
+.course-code{font-size:20px;font-weight:950;line-height:1.1}
+.course-name{color:var(--muted);font-weight:700;margin-top:3px;word-break:break-word}
+.countdown{font-weight:900;border-radius:999px;background:var(--accent2);color:var(--accent);padding:6px 9px;white-space:nowrap;font-size:13px}
+.meta{display:grid;gap:5px;color:var(--muted);font-size:13px;line-height:1.45;padding-left:4px}
+.next-action{background:rgba(224,196,143,.15);border:1px solid rgba(224,196,143,.22);border-radius:18px;padding:10px 12px;font-weight:800;line-height:1.45}
+.progress-wrap{display:grid;gap:6px}
+.progress-line{height:10px;border-radius:999px;background:rgba(120,105,85,.16);overflow:hidden}
+.progress-bar{height:100%;width:0;background:linear-gradient(90deg,rgba(224,196,143,.75),rgba(112,153,87,.65));transition:width .35s ease}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.details{display:none;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px;gap:12px}
+.course-card.open .details{display:grid}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+.checklist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.check-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;background:rgba(224,196,143,.10);border:1px solid rgba(224,196,143,.18);border-radius:16px;padding:9px 10px}
+.check-item.done .check-text{text-decoration:line-through;color:var(--muted)}
+.check-item input{width:auto}
+.check-form{display:flex;gap:8px}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:18px;padding:16px;text-align:center;background:rgba(255,255,255,.22)}
+.notice{background:rgba(224,196,143,.12);border:1px dashed rgba(224,196,143,.35);border-radius:18px;padding:12px 14px;color:var(--muted);line-height:1.55}
+@media(max-width:850px){.form-grid{grid-template-columns:1fr 1fr}.course-grid{grid-template-columns:1fr}}
+@media(max-width:560px){body{padding:14px}.wrap{width:100%}.form-grid,.detail-grid{grid-template-columns:1fr}.check-form{display:grid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card">
+    <div class="topbar">
+      <div>
+        <h1>📚 Exam Board</h1>
+        <p>这里专门放期末复习，不和日常 DDL 混在一起喵。</p>
+      </div>
+      <a class="back" href="/">← 回 Morning Board</a>
+    </div>
+  </section>
+  <section class="card">
+    <h2>添加课程</h2>
+    <p>先只填课程编号、名称和考试时间就够了，其他可以之后在详情里补。</p>
+    <div class="form-grid">
+      <label>课程编号<input id="newCode" placeholder="COMP5046"></label>
+      <label>课程名<input id="newName" placeholder="Natural Language Processing"></label>
+      <label>考试时间<input id="newExamTime" type="datetime-local"></label>
+      <button id="addCourseBtn">添加课程</button>
+    </div>
+  </section>
+  <section class="card">
+    <div class="topbar">
+      <div>
+        <h2>课程复习卡片</h2>
+        <p>只在卡片上放最关键的信息；长内容点开再看。</p>
+      </div>
+      <button class="light" id="refreshBtn">刷新倒计时</button>
+    </div>
+    <div id="courseList" class="course-grid"></div>
+  </section>
+  <section class="card">
+    <h2>使用方式</h2>
+    <div class="notice">建议每门课只写一个“下一步行动”，比如“今晚看 Week 9 slides”。重点、cheatsheet 规则、复习进度放进详情里，不要把它们塞回日常 DDL 喵。</div>
+  </section>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let state={courses:[]};
+const openCourses=new Set();
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+async function api(path,opt={}){
+  const res=await fetch(path,{headers:{"Content-Type":"application/json"},...opt});
+  const text=await res.text();
+  let data={};
+  try{data=text?JSON.parse(text):{}}catch(e){data={error:text||res.statusText}}
+  if(!res.ok)throw new Error(data.error||res.statusText);
+  return data;
+}
+function fmtExamTime(value){
+  if(!value)return "未设置";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return value.replace("T"," ");
+  return d.toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+function cheatLabel(v){
+  if(v==="yes")return "允许 cheatsheet";
+  if(v==="no")return "不允许 cheatsheet";
+  if(v==="unknown")return "cheatsheet 未确认";
+  return "cheatsheet 未填写";
+}
+async function load(){state=await api("/api/exams");render()}
+function render(){
+  const list=$("courseList");
+  const courses=state.courses||[];
+  list.innerHTML=courses.length?courses.map(courseHtml).join(""):`<div class="empty">还没有课程。先加一门，考试作战室就开张喵。</div>`;
+}
+function courseHtml(c){
+  const id=String(c.id);
+  const open=openCourses.has(id);
+  const percent=c.progress_percent||0;
+  const checklist=(c.checklist||[]).map(item=>`
+    <li class="check-item ${item.done?"done":""}">
+      <input type="checkbox" ${item.done?"checked":""} data-check-done="${item.id}">
+      <div class="check-text">${escapeHtml(item.text)}</div>
+      <button class="danger" data-delete-check="${item.id}">×</button>
+    </li>`).join("") || `<li class="empty">还没有复习 checklist。</li>`;
+  return `<article class="course-card ${escapeHtml(c.urgency||"unknown")} ${open?"open":""}" data-course-id="${id}">
+    <div class="course-head">
+      <div>
+        <div class="course-code">${escapeHtml(c.code||"未编号")}</div>
+        <div class="course-name">${escapeHtml(c.name||"未命名课程")}</div>
+      </div>
+      <div class="countdown">${escapeHtml(c.countdown||"未设置考试时间")}</div>
+    </div>
+    <div class="meta">
+      <div>考试：${escapeHtml(fmtExamTime(c.exam_datetime))}</div>
+      <div>地点/模式：${escapeHtml(c.exam_location||"未填写")}</div>
+      <div>${escapeHtml(cheatLabel(c.cheatsheet_allowed))}</div>
+    </div>
+    <div class="next-action">下一步：${escapeHtml(c.next_action||"还没写。可以先写一个最小动作喵。")}</div>
+    <div class="progress-wrap">
+      <div class="meta">Checklist：${c.checklist_done||0}/${c.checklist_total||0} · ${percent}%</div>
+      <div class="progress-line"><div class="progress-bar" style="width:${percent}%"></div></div>
+    </div>
+    <div class="card-actions">
+      <button class="light" data-toggle-course="${id}">${open?"收起详情":"打开详情"}</button>
+      <button class="danger" data-delete-course="${id}">删除课程</button>
+    </div>
+    <div class="details">
+      <div class="detail-grid">
+        <label>课程编号<input data-field="code" data-course="${id}" value="${escapeHtml(c.code||"")}"></label>
+        <label>课程名<input data-field="name" data-course="${id}" value="${escapeHtml(c.name||"")}"></label>
+        <label>考试时间<input type="datetime-local" data-field="exam_datetime" data-course="${id}" value="${escapeHtml(c.exam_datetime||"")}"></label>
+        <label>地点/模式<input data-field="exam_location" data-course="${id}" value="${escapeHtml(c.exam_location||"")}"></label>
+        <label>考试时长<input data-field="exam_duration" data-course="${id}" value="${escapeHtml(c.exam_duration||"")}"></label>
+        <label>cheatsheet
+          <select data-field="cheatsheet_allowed" data-course="${id}">
+            <option value="" ${!c.cheatsheet_allowed?"selected":""}>未填写</option>
+            <option value="unknown" ${c.cheatsheet_allowed==="unknown"?"selected":""}>未确认</option>
+            <option value="yes" ${c.cheatsheet_allowed==="yes"?"selected":""}>允许</option>
+            <option value="no" ${c.cheatsheet_allowed==="no"?"selected":""}>不允许</option>
+          </select>
+        </label>
+        <label class="full">cheatsheet / 考试规则备注<textarea data-field="cheatsheet_note" data-course="${id}">${escapeHtml(c.cheatsheet_note||"")}</textarea></label>
+        <label class="full">复习重点<textarea data-field="focus_note" data-course="${id}">${escapeHtml(c.focus_note||"")}</textarea></label>
+        <label class="full">目前复习进度<textarea data-field="progress_note" data-course="${id}">${escapeHtml(c.progress_note||"")}</textarea></label>
+        <label class="full">当前最该做的一步<input data-field="next_action" data-course="${id}" value="${escapeHtml(c.next_action||"")}"></label>
+      </div>
+      <div class="card-actions"><button data-save-course="${id}">保存课程详情</button></div>
+      <h3>复习 checklist</h3>
+      <div class="check-form">
+        <input data-new-check="${id}" placeholder="比如：Week 9 slides 过一遍">
+        <button data-add-check="${id}">添加</button>
+      </div>
+      <ul class="checklist">${checklist}</ul>
+    </div>
+  </article>`;
+}
+$("addCourseBtn").onclick=async()=>{
+  const code=$("newCode").value.trim();
+  const name=$("newName").value.trim();
+  const exam_datetime=$("newExamTime").value;
+  if(!code&&!name)return alert("至少写课程编号或课程名喵");
+  const c=await api("/api/exams",{method:"POST",body:JSON.stringify({code,name,exam_datetime})});
+  $("newCode").value="";$("newName").value="";$("newExamTime").value="";
+  openCourses.add(String(c.id));
+  await load();
+};
+$("refreshBtn").onclick=load;
+document.body.onclick=async e=>{
+  const btn=e.target.closest("button");
+  if(!btn)return;
+  const toggle=btn.dataset.toggleCourse, save=btn.dataset.saveCourse, del=btn.dataset.deleteCourse;
+  const addCheck=btn.dataset.addCheck, delCheck=btn.dataset.deleteCheck;
+  if(toggle){openCourses.has(toggle)?openCourses.delete(toggle):openCourses.add(toggle);render()}
+  if(save){
+    const patch={};
+    document.querySelectorAll(`[data-course="${save}"][data-field]`).forEach(el=>patch[el.dataset.field]=el.value);
+    await api(`/api/exams/${save}`,{method:"PATCH",body:JSON.stringify(patch)});
+    openCourses.add(String(save));await load();
+  }
+  if(del){
+    if(confirm("确定删除这门课程和它的 checklist 吗？")){
+      await api(`/api/exams/${del}`,{method:"DELETE"});
+      openCourses.delete(String(del));await load();
+    }
+  }
+  if(addCheck){
+    const input=document.querySelector(`[data-new-check="${addCheck}"]`);
+    const text=(input?.value||"").trim();
+    if(!text)return;
+    await api(`/api/exams/${addCheck}/checklist`,{method:"POST",body:JSON.stringify({text})});
+    input.value="";openCourses.add(String(addCheck));await load();
+  }
+  if(delCheck){await api(`/api/exams/checklist/${delCheck}`,{method:"DELETE"});await load()}
+};
+document.body.onchange=async e=>{
+  const cb=e.target.closest("[data-check-done]");
+  if(!cb)return;
+  await api(`/api/exams/checklist/${cb.dataset.checkDone}`,{method:"PATCH",body:JSON.stringify({done:cb.checked})});
+  await load();
+};
+load().catch(err=>alert("加载失败："+err.message));
+setInterval(load,60000);
+</script>
+</body>
+</html>

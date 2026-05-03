@@ -1,15 +1,14 @@
 # 醒来先看 Morning Board
 
-当前版本：`v1.7.9`
+当前版本：`v1.8.2`
 
-## v1.7.9 更新
+## v1.8.2 修复
 
-- 修复 Telegram 定时提醒卡片在两栏布局中溢出的问题。
-- Telegram 设置区改成适合半宽卡片的分行布局：
-  - 时间 + 开关
-  - chat_id + bot token
-  - 保存 + 测试
-- 后端逻辑沿用 v1.7.8，不改数据库。
+- 修复 `EXAM_DB_PATH` 未定义。
+- 修复 `/exams` 页面 404。
+- 修复 Exam Board 入口插入到 Telegram 卡片里的问题。
+- 入口现在固定放在顶部「醒来先看」标题区。
+- 考试板继续使用独立数据库 `exam_board.db`。
 
 ## 覆盖升级
 
@@ -18,6 +17,7 @@
 ```text
 app.py
 static/index.html
+static/exams.html
 ```
 
 数据库不要删。
@@ -26,4 +26,11 @@ static/index.html
 
 ```bash
 python app.py
+```
+
+打开：
+
+```text
+http://100.97.142.99:5001/
+http://100.97.142.99:5001/exams
 ```

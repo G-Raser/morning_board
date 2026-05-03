@@ -1,7 +1,7 @@
 # Changelog
 
-## v1.7.9
+## v1.8.2
 
-- 修复 Telegram 设置区在半宽卡片内横向溢出的问题。
-- 重新排布 Telegram 表单，避免按钮跑出卡片。
-- 后端逻辑不变。
+- 修复 `EXAM_DB_PATH` undefined。
+- 修复 `/exams` route missing 导致 404。
+- 修复 Exam Board 首页入口位置错误。

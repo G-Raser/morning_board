@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.7.9</title>
+<title>醒来先看 v1.8.2</title>
 <script>
 (function(){
   try{
@@ -1027,6 +1027,32 @@ html,body{
   }
 }
 
+
+.exam-entry{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  width:fit-content;
+  margin-top:2px;
+  padding:10px 14px;
+  border-radius:999px;
+  background:var(--accent2);
+  color:var(--accent);
+  border:1px solid rgba(109,76,47,.12);
+  font-weight:850;
+  text-decoration:none;
+  box-shadow:0 6px 16px rgba(70,45,20,.06);
+}
+.exam-entry:hover{
+  filter:brightness(1.04);
+  transform:translateY(-1px);
+}
+html.dark .exam-entry{
+  border-color:rgba(214,180,140,.18);
+}
+
+
+.hero-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 </style>
 </head>
 <body>
@@ -1037,6 +1063,7 @@ html,body{
       <div class="kicker">猫猫开机存档板</div>
       <h1>醒来先看</h1>
       <p>上面接住今天，下面投喂明天。不要靠脑子硬加载人生喵。</p>
+      <div class="hero-links"><a class="exam-entry" href="/exams">📚 去 Exam Board 看复习进度</a></div>
     </div>
     <div class="row">
       <label>今天日期<div class="input-picker today-date-picker">

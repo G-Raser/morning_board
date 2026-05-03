@@ -11,6 +11,7 @@ import urllib.error
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "morning_board.db"
+EXAM_DB_PATH = Path("exam_board.db")
 app = Flask(__name__, static_folder="static", static_url_path="")
 CORS(app)
 
@@ -342,6 +343,11 @@ def index():
     html = html.replace('<html lang="zh-CN">', f'<html lang="zh-CN" class="{theme}">')
     return html
 
+
+@app.route("/exams")
+def exams_page():
+    return send_from_directory("static", "exams.html")
+
 @app.route("/api/state")
 def state():
     init_db()
@@ -657,6 +663,224 @@ def save_note():
     return jsonify({"ok": True})
 
 
+
+def get_exam_conn():
+    conn = sqlite3.connect(EXAM_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_exam_db():
+    with get_exam_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS exam_courses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL DEFAULT '',
+                name TEXT NOT NULL DEFAULT '',
+                exam_datetime TEXT NOT NULL DEFAULT '',
+                exam_location TEXT NOT NULL DEFAULT '',
+                exam_duration TEXT NOT NULL DEFAULT '',
+                cheatsheet_allowed TEXT NOT NULL DEFAULT '',
+                cheatsheet_note TEXT NOT NULL DEFAULT '',
+                focus_note TEXT NOT NULL DEFAULT '',
+                progress_note TEXT NOT NULL DEFAULT '',
+                next_action TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS exam_checklist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                course_id INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                done INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(course_id) REFERENCES exam_courses(id)
+            )
+        """)
+        conn.commit()
+
+def parse_exam_dt(value):
+    if not value:
+        return None
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            pass
+    return None
+
+def normalize_exam_course(row, conn):
+    course = dict(row)
+    items = dicts(conn.execute(
+        "SELECT id,course_id,text,done,created_at FROM exam_checklist WHERE course_id=? ORDER BY id",
+        (course["id"],)
+    ).fetchall())
+    course["checklist"] = items
+    done = sum(1 for item in items if int(item.get("done") or 0) == 1)
+    total = len(items)
+    course["checklist_done"] = done
+    course["checklist_total"] = total
+    course["progress_percent"] = round(done * 100 / total) if total else 0
+    dt = parse_exam_dt(course.get("exam_datetime", ""))
+    if dt:
+        delta = dt - datetime.now()
+        total_seconds = int(delta.total_seconds())
+        course["seconds_left"] = total_seconds
+        if total_seconds < 0:
+            course["countdown"] = "已结束"
+            course["urgency"] = "past"
+        else:
+            days = total_seconds // 86400
+            hours = (total_seconds % 86400) // 3600
+            if days > 0:
+                course["countdown"] = f"还有 {days} 天 {hours} 小时"
+            else:
+                minutes = (total_seconds % 3600) // 60
+                course["countdown"] = f"还有 {hours} 小时 {minutes} 分钟"
+            if days >= 14:
+                course["urgency"] = "calm"
+            elif days >= 7:
+                course["urgency"] = "soon"
+            elif days >= 3:
+                course["urgency"] = "near"
+            else:
+                course["urgency"] = "urgent"
+    else:
+        course["seconds_left"] = None
+        course["countdown"] = "未设置考试时间"
+        course["urgency"] = "unknown"
+    return course
+
+def get_exam_course_or_404(conn, course_id):
+    row = conn.execute("SELECT * FROM exam_courses WHERE id=?", (course_id,)).fetchone()
+    if not row:
+        return None
+    return normalize_exam_course(row, conn)
+
+@app.route("/api/exams", methods=["GET"])
+def list_exam_courses():
+    init_exam_db()
+    with get_exam_conn() as conn:
+        rows = conn.execute("""
+            SELECT * FROM exam_courses
+            ORDER BY
+              CASE WHEN exam_datetime='' THEN 1 ELSE 0 END,
+              exam_datetime ASC,
+              id DESC
+        """).fetchall()
+        courses = [normalize_exam_course(row, conn) for row in rows]
+    return jsonify({"courses": courses})
+
+@app.route("/api/exams", methods=["POST"])
+def create_exam_course():
+    init_exam_db()
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    name = (data.get("name") or "").strip()
+    exam_datetime = (data.get("exam_datetime") or "").strip()
+    if not code and not name:
+        return jsonify({"error": "code or name is required"}), 400
+    now = local_now_str()
+    with get_exam_conn() as conn:
+        cur = conn.execute("""
+            INSERT INTO exam_courses(
+                code,name,exam_datetime,exam_location,exam_duration,
+                cheatsheet_allowed,cheatsheet_note,focus_note,progress_note,next_action,
+                created_at,updated_at
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            code, name, exam_datetime,
+            (data.get("exam_location") or "").strip(),
+            (data.get("exam_duration") or "").strip(),
+            (data.get("cheatsheet_allowed") or "").strip(),
+            (data.get("cheatsheet_note") or "").strip(),
+            (data.get("focus_note") or "").strip(),
+            (data.get("progress_note") or "").strip(),
+            (data.get("next_action") or "").strip(),
+            now, now
+        ))
+        conn.commit()
+        course = get_exam_course_or_404(conn, cur.lastrowid)
+    return jsonify(course), 201
+
+@app.route("/api/exams/<int:course_id>", methods=["PATCH"])
+def update_exam_course(course_id):
+    init_exam_db()
+    data = request.get_json(silent=True) or {}
+    allowed = [
+        "code","name","exam_datetime","exam_location","exam_duration",
+        "cheatsheet_allowed","cheatsheet_note","focus_note","progress_note","next_action"
+    ]
+    updates = []
+    values = []
+    for key in allowed:
+        if key in data:
+            updates.append(f"{key}=?")
+            values.append(str(data.get(key) or "").strip())
+    if not updates:
+        return jsonify({"ok": True})
+    updates.append("updated_at=?")
+    values.append(local_now_str())
+    values.append(course_id)
+    with get_exam_conn() as conn:
+        conn.execute(f"UPDATE exam_courses SET {', '.join(updates)} WHERE id=?", values)
+        conn.commit()
+        course = get_exam_course_or_404(conn, course_id)
+        if not course:
+            return jsonify({"error": "course not found"}), 404
+    return jsonify(course)
+
+@app.route("/api/exams/<int:course_id>", methods=["DELETE"])
+def delete_exam_course(course_id):
+    init_exam_db()
+    with get_exam_conn() as conn:
+        conn.execute("DELETE FROM exam_checklist WHERE course_id=?", (course_id,))
+        conn.execute("DELETE FROM exam_courses WHERE id=?", (course_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/exams/<int:course_id>/checklist", methods=["POST"])
+def add_exam_checklist_item(course_id):
+    init_exam_db()
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    with get_exam_conn() as conn:
+        row = conn.execute("SELECT id FROM exam_courses WHERE id=?", (course_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "course not found"}), 404
+        cur = conn.execute(
+            "INSERT INTO exam_checklist(course_id,text,done,created_at) VALUES(?,?,0,?)",
+            (course_id, text, local_now_str())
+        )
+        conn.commit()
+    return jsonify({"id": cur.lastrowid, "course_id": course_id, "text": text, "done": 0}), 201
+
+@app.route("/api/exams/checklist/<int:item_id>", methods=["PATCH"])
+def update_exam_checklist_item(item_id):
+    init_exam_db()
+    data = request.get_json(silent=True) or {}
+    with get_exam_conn() as conn:
+        if "done" in data:
+            conn.execute("UPDATE exam_checklist SET done=? WHERE id=?", (1 if data.get("done") else 0, item_id))
+        if "text" in data:
+            text = (data.get("text") or "").strip()
+            if text:
+                conn.execute("UPDATE exam_checklist SET text=? WHERE id=?", (text, item_id))
+        conn.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/exams/checklist/<int:item_id>", methods=["DELETE"])
+def delete_exam_checklist_item(item_id):
+    init_exam_db()
+    with get_exam_conn() as conn:
+        conn.execute("DELETE FROM exam_checklist WHERE id=?", (item_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
+
 @app.route("/api/telegram/test", methods=["POST"])
 def test_telegram():
     init_db()
@@ -699,6 +923,7 @@ def update_settings():
 
 if __name__ == "__main__":
     init_db()
+    init_exam_db()
     start_background_scheduler()
     # app.run(host="127.0.0.1", port=5001, debug=True, use_reloader=False)
     app.run(host="100.97.142.99", port=5001, debug=True, use_reloader=False)
