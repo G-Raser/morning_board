@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.7.8</title>
+<title>醒来先看 v1.7.9</title>
 <script>
 (function(){
   try{
@@ -947,6 +947,86 @@ html,body{
   }
 }
 
+
+/* v1.7.9: Telegram card half-width layout fix */
+.telegram-box.simple{
+  width:100%;
+  min-width:0;
+}
+.telegram-panel{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  display:grid;
+  gap:10px;
+}
+.telegram-topline{
+  display:grid;
+  grid-template-columns:minmax(180px,230px) max-content;
+  gap:12px;
+  align-items:end;
+  justify-content:start;
+}
+.telegram-time-field{
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+.telegram-time-field .time-picker{
+  width:100%;
+  max-width:230px;
+}
+.telegram-toggle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
+  padding-bottom:11px;
+  color:var(--text);
+  font-weight:700;
+}
+.telegram-toggle input{
+  width:auto;
+  flex:none;
+}
+.telegram-secretline{
+  display:grid;
+  grid-template-columns:minmax(140px,190px) minmax(220px,1fr);
+  gap:10px;
+  min-width:0;
+}
+.telegram-secretline input{
+  min-width:0;
+  width:100%;
+}
+.telegram-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+.telegram-actions button{
+  width:auto;
+  max-width:100%;
+}
+.settings-card{
+  min-width:0;
+  overflow:hidden;
+}
+.settings-card .notice{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+@media(max-width:980px){
+  .telegram-topline,
+  .telegram-secretline{
+    grid-template-columns:1fr;
+  }
+  .telegram-toggle{
+    padding-bottom:0;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1056,15 +1136,17 @@ html,body{
   <p class="muted">到点推送到 Telegram。只要后端正在运行，就不需要一直开着网页。</p>
   <div class="telegram-box simple">
     <div class="telegram-panel">
-      <div class="telegram-mainline">
+      <div class="telegram-topline">
         <label class="telegram-time-field">提醒时间<div class="input-picker time-picker"><input id="reminderTime" type="time"><button type="button" class="picker-btn" data-picker="reminderTime" aria-label="选择提醒时间">⏰</button></div></label>
         <label class="telegram-toggle"><input id="telegramEnabled" type="checkbox"><span>开启 Telegram 推送</span></label>
-        <button id="saveTelegramBtn">保存提醒</button>
-        <button class="light" id="testTelegramBtn">测试 Telegram</button>
       </div>
       <div class="telegram-secretline">
         <input id="telegramChatId" placeholder="chat_id">
         <input id="telegramBotToken" type="password" placeholder="bot token，留空=不修改">
+      </div>
+      <div class="telegram-actions">
+        <button id="saveTelegramBtn">保存提醒</button>
+        <button class="light" id="testTelegramBtn">测试 Telegram</button>
       </div>
       <div class="notice" id="telegramTokenNote">还没有保存 token。</div>
     </div>
