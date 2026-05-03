@@ -1,21 +1,16 @@
 # 醒来先看 Morning Board
 
-当前版本：`v1.7.7`
+当前版本：`v1.7.8`
 
-## v1.7.7 更新
+## v1.7.8 更新
 
-- 提醒设置区改成 Telegram-only。
-- 移除旧浏览器通知 UI。
-- `保存提醒` 会同时保存：
-  - `reminder_enabled`
-  - `reminder_time`
-  - `telegram_enabled`
-  - `telegram_chat_id`
-  - `telegram_bot_token`（留空不覆盖旧 token）
-- 保留小感想移动分类功能：
-  - 点开 emoji 气泡后，`↪` 可以移动小句子到别的 emoji。
-- 运行地址保持：
-  - `100.97.142.99:5001`
+- 修复 Telegram 定时提醒设置区排版。
+- 提醒设置拆成更稳定的两行：
+  - 第一行：提醒时间、开启推送、保存、测试
+  - 第二行：chat_id、bot token
+- 修复页面出现横向滚动/整体看起来歪掉的问题。
+- Telegram 推送后端逻辑沿用 v1.7.7。
+- 保留小感想移动分类功能。
 
 ## 覆盖升级
 

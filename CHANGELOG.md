@@ -1,10 +1,8 @@
 # Changelog
 
-## v1.7.7
+## v1.7.8
 
-- 移除旧浏览器通知 UI。
-- 提醒设置区改成 Telegram-only。
-- 新增/保留 Telegram 推送后台线程。
-- `保存提醒` 同时保存提醒时间和 Telegram 开关。
-- 保留 `/api/telegram/test` 测试推送。
-- 保留 v1.7.5 小感想移动分类功能。
+- 修复 Telegram 设置区 checkbox 文案被挤成多行的问题。
+- 修复通知设置长排导致页面横向溢出的问题。
+- Telegram 设置区改成更稳定的两行布局。
+- 后端逻辑不变。
