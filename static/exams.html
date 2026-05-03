@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exam Board v1.8.2</title>
+<title>Exam Board v1.8.3</title>
 <script>
 (function(){
   try{
@@ -30,6 +30,16 @@ button:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 10p
 button.light{background:var(--accent2);color:var(--accent)}
 button.danger{background:var(--danger-bg);color:var(--danger)}
 input,textarea,select{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card2);color:var(--text);outline:none;min-width:0;width:100%}
+.input-picker{position:relative;flex:1;min-width:150px}
+.input-picker input{width:100%;padding-right:52px}
+.input-picker input::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
+.picker-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:2;box-shadow:none;font-weight:850}
+.picker-btn:hover{background:var(--accent2);transform:translateY(-50%);box-shadow:none}
+.picker-btn:not(:disabled):hover{transform:translateY(-50%);box-shadow:none}
+.picker-btn:not(:disabled):active{transform:translateY(-50%);filter:brightness(.98)}
+html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,255,.25))}
+.datetime-picker{min-width:0}
+.datetime-picker input{font-variant-numeric:tabular-nums}
 textarea{min-height:84px;resize:vertical;line-height:1.5}
 label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
 .form-grid{display:grid;grid-template-columns:1fr 1.4fr 220px auto;gap:10px;align-items:end}
@@ -83,7 +93,7 @@ label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
     <div class="form-grid">
       <label>课程编号<input id="newCode" placeholder="COMP5046"></label>
       <label>课程名<input id="newName" placeholder="Natural Language Processing"></label>
-      <label>考试时间<input id="newExamTime" type="datetime-local"></label>
+      <label>考试时间<div class="input-picker datetime-picker"><input id="newExamTime" type="datetime-local" aria-label="考试时间"><button type="button" class="picker-btn" data-picker="newExamTime" aria-label="选择考试时间">📅</button></div></label>
       <button id="addCourseBtn">添加课程</button>
     </div>
   </section>
@@ -169,7 +179,7 @@ function courseHtml(c){
       <div class="detail-grid">
         <label>课程编号<input data-field="code" data-course="${id}" value="${escapeHtml(c.code||"")}"></label>
         <label>课程名<input data-field="name" data-course="${id}" value="${escapeHtml(c.name||"")}"></label>
-        <label>考试时间<input type="datetime-local" data-field="exam_datetime" data-course="${id}" value="${escapeHtml(c.exam_datetime||"")}"></label>
+        <label>考试时间<div class="input-picker datetime-picker"><input id="examDateTime-${id}" type="datetime-local" data-field="exam_datetime" data-course="${id}" value="${escapeHtml(c.exam_datetime||"")}" aria-label="考试时间"><button type="button" class="picker-btn" data-picker="examDateTime-${id}" aria-label="选择考试时间">📅</button></div></label>
         <label>地点/模式<input data-field="exam_location" data-course="${id}" value="${escapeHtml(c.exam_location||"")}"></label>
         <label>考试时长<input data-field="exam_duration" data-course="${id}" value="${escapeHtml(c.exam_duration||"")}"></label>
         <label>cheatsheet
@@ -239,6 +249,18 @@ document.body.onchange=async e=>{
   await api(`/api/exams/checklist/${cb.dataset.checkDone}`,{method:"PATCH",body:JSON.stringify({done:cb.checked})});
   await load();
 };
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-picker]");
+  if(!btn)return;
+  const input=$(btn.dataset.picker);
+  if(!input)return;
+  if(input.showPicker){
+    input.showPicker();
+  }else{
+    input.focus();
+    input.click();
+  }
+});
 load().catch(err=>alert("加载失败："+err.message));
 setInterval(load,60000);
 </script>
