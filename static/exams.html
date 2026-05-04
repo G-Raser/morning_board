@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exam Board v1.8.8</title>
+<title>Exam Board v1.8.9</title>
 <script>
 (function(){
   try{
@@ -320,14 +320,61 @@ $("refreshBtn").onclick=load;
 $("closeModalBtn").onclick=closeModal;
 $("courseModal").addEventListener("click",e=>{if(e.target.id==="courseModal")closeModal()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&selectedCourseId)closeModal()});
+let activePickerId=null;
+let suppressPickerClick=false;
+function bindPickerCloseState(input){
+  if(!input||input.dataset.pickerCloseBound)return;
+  input.dataset.pickerCloseBound="1";
+  input.addEventListener("blur",()=>{
+    if(activePickerId===input.id)activePickerId=null;
+  });
+  input.addEventListener("change",()=>{
+    if(activePickerId===input.id)activePickerId=null;
+  });
+}
+function openNativePicker(input){
+  bindPickerCloseState(input);
+  activePickerId=input.id;
+  try{
+    input.focus({preventScroll:true});
+    if(input.showPicker)input.showPicker();
+    else input.click();
+  }catch(err){
+    input.focus();
+  }
+}
+function closeNativePicker(input){
+  try{input.blur()}catch(err){}
+  activePickerId=null;
+}
+document.addEventListener("pointerdown",e=>{
+  const btn=e.target.closest("[data-picker]");
+  if(!btn)return;
+  const picker=btn.dataset.picker;
+  const input=$(picker);
+  if(!input)return;
+  if(activePickerId===picker){
+    e.preventDefault();
+    suppressPickerClick=true;
+    closeNativePicker(input);
+  }
+},true);
 document.body.onclick=async e=>{
   const btn=e.target.closest("button");
   if(!btn)return;
   const picker=btn.dataset.picker;
   if(picker){
     const input=$(picker);
-    if(input?.showPicker)input.showPicker();
-    else input?.focus();
+    if(!input)return;
+    if(suppressPickerClick){
+      suppressPickerClick=false;
+      return;
+    }
+    if(activePickerId===picker){
+      closeNativePicker(input);
+      return;
+    }
+    openNativePicker(input);
     return;
   }
   const open=btn.dataset.openCourse, save=btn.dataset.saveCourse, del=btn.dataset.deleteCourse;

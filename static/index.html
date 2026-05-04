@@ -1728,17 +1728,61 @@ async function askNewDueForReactivation(btn){
   });
 }
 
+let activePickerId=null;
+let suppressPickerClick=false;
+function bindPickerCloseState(input){
+  if(!input||input.dataset.pickerCloseBound)return;
+  input.dataset.pickerCloseBound="1";
+  input.addEventListener("blur",()=>{
+    if(activePickerId===input.id)activePickerId=null;
+  });
+  input.addEventListener("change",()=>{
+    if(activePickerId===input.id)activePickerId=null;
+  });
+}
+function openNativePicker(input){
+  bindPickerCloseState(input);
+  activePickerId=input.id;
+  try{
+    input.focus({preventScroll:true});
+    if(input.showPicker)input.showPicker();
+    else input.click();
+  }catch(err){
+    input.focus();
+  }
+}
+function closeNativePicker(input){
+  try{input.blur()}catch(err){}
+  activePickerId=null;
+}
+document.addEventListener("pointerdown",e=>{
+  const btn=e.target.closest("[data-picker]");
+  if(!btn)return;
+  const picker=btn.dataset.picker;
+  const input=$(picker);
+  if(!input)return;
+  if(activePickerId===picker){
+    e.preventDefault();
+    suppressPickerClick=true;
+    closeNativePicker(input);
+  }
+},true);
 document.addEventListener("click",e=>{
   const btn=e.target.closest("[data-picker]");
   if(!btn)return;
-  const input=$(btn.dataset.picker);
+  e.preventDefault();
+  const picker=btn.dataset.picker;
+  const input=$(picker);
   if(!input)return;
-  if(input.showPicker){
-    input.showPicker();
-  }else{
-    input.focus();
-    input.click();
+  if(suppressPickerClick){
+    suppressPickerClick=false;
+    return;
   }
+  if(activePickerId===picker){
+    closeNativePicker(input);
+    return;
+  }
+  openNativePicker(input);
 });
 window.addEventListener("DOMContentLoaded",()=>{
   bindCatModal();
