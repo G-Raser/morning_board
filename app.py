@@ -276,15 +276,29 @@ def ensure_telegram_template_file():
         TELEGRAM_TEMPLATE_PATH.write_text(DEFAULT_TELEGRAM_TEMPLATE_FILE, encoding="utf-8")
 
 
+TEMPLATE_SECTION_TAG_RE = re.compile(r"^\s*\[(/?)(with_done|without_done|ddl_section)\]\s*$")
+
 def parse_telegram_templates(raw_text):
     templates = {}
-    for name in ("with_done", "without_done", "ddl_section"):
-        start_tag = f"[{name}]"
-        end_tag = f"[/{name}]"
-        start = raw_text.find(start_tag)
-        end = raw_text.find(end_tag)
-        if start != -1 and end != -1 and end > start:
-            templates[name] = raw_text[start + len(start_tag):end].strip()
+    current_name = None
+    current_lines = []
+    for line in raw_text.splitlines():
+        tag_match = TEMPLATE_SECTION_TAG_RE.match(line)
+        if not tag_match:
+            if current_name is not None:
+                current_lines.append(line)
+            continue
+        is_end_tag, tag_name = tag_match.groups()
+        if not is_end_tag:
+            current_name = tag_name
+            current_lines = []
+            continue
+        if current_name == tag_name:
+            templates[current_name] = "\n".join(current_lines).strip()
+            current_name = None
+            current_lines = []
+        elif current_name is not None:
+            current_lines.append(line)
     return templates
 
 
