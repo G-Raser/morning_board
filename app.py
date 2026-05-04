@@ -14,6 +14,7 @@ import uuid
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "morning_board.db"
 EXAM_DB_PATH = BASE_DIR / "exam_board.db"
+TELEGRAM_TEMPLATE_PATH = BASE_DIR / "telegram_message_templates.txt"
 EXAM_IMAGE_DIR = BASE_DIR / "static" / "uploads" / "exam_evidence"
 ALLOWED_EXAM_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif"}
 app = Flask(__name__, static_folder="static", static_url_path="")
@@ -207,6 +208,167 @@ def minutes_from_hhmm(value):
     except Exception:
         return None
 
+def format_date_label(value):
+    weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    try:
+        day = datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        day = date.today()
+    return f"{day.isoformat()}（{weekday_names[day.weekday()]}）"
+
+def tomorrow_date_str(today):
+    try:
+        return (datetime.strptime(today, "%Y-%m-%d").date() + timedelta(days=1)).isoformat()
+    except ValueError:
+        return (date.today() + timedelta(days=1)).isoformat()
+
+DEFAULT_TELEGRAM_TEMPLATE_FILE = """# Telegram 晚间提醒模板
+# 你可以直接改这里的文案。
+# 请尽量保留这些占位符：{{date}}、{{today_done}}、{{tomorrow_ddl}}
+# {{today_done}} 会自动替换成今天完成事项列表。
+# {{tomorrow_ddl}} 会自动替换成明天 DDL 列表；如果没有 DDL，会显示一条“暂时没有 DDL”。
+
+[with_done]
+📅 {{date}}
+🌙 晚间收尾时间到喵
+
+今天做到了这些：
+
+{{today_done}}
+
+主人好棒！每一步无论大小都值得肯定喵៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
+
+这是明天要留意的 DDL喵：
+
+{{tomorrow_ddl}}
+
+记得给明天的自己写点小提醒喵：
+
+1. 今天完成了什么
+2. 明天最先看什么
+[/with_done]
+
+[without_done]
+📅 {{date}}
+🌙 晚间收尾时间到喵
+
+今天还没记录完成事项哦。
+休息休息也很好喵，也可以随手写点简单的小事，比如“整理了一点资料”之类的喵៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
+
+这是明天要留意的 DDL喵：
+
+{{tomorrow_ddl}}
+
+记得给明天的自己写点小提醒喵：
+
+1. 今天完成了什么
+2. 明天最先看什么
+[/without_done]
+"""
+
+
+def ensure_telegram_template_file():
+    if not TELEGRAM_TEMPLATE_PATH.exists():
+        TELEGRAM_TEMPLATE_PATH.write_text(DEFAULT_TELEGRAM_TEMPLATE_FILE, encoding="utf-8")
+
+
+def parse_telegram_templates(raw_text):
+    templates = {}
+    for name in ("with_done", "without_done"):
+        start_tag = f"[{name}]"
+        end_tag = f"[/{name}]"
+        start = raw_text.find(start_tag)
+        end = raw_text.find(end_tag)
+        if start != -1 and end != -1 and end > start:
+            templates[name] = raw_text[start + len(start_tag):end].strip()
+    return templates
+
+
+def get_telegram_templates():
+    ensure_telegram_template_file()
+    try:
+        raw_text = TELEGRAM_TEMPLATE_PATH.read_text(encoding="utf-8")
+        templates = parse_telegram_templates(raw_text)
+    except Exception:
+        templates = {}
+    if "with_done" not in templates or "without_done" not in templates:
+        templates = parse_telegram_templates(DEFAULT_TELEGRAM_TEMPLATE_FILE)
+    return templates
+
+
+def render_text_template(template, values):
+    text = template
+    for key, value in values.items():
+        text = text.replace("{{" + key + "}}", str(value))
+    return text.strip()
+
+
+def get_today_done_items(conn, today):
+    done_rows = conn.execute("""
+        SELECT text,created_at
+        FROM daily_done
+        WHERE done_date=?
+        ORDER BY id DESC
+    """, (today,)).fetchall()
+    task_rows = conn.execute("""
+        SELECT title,due_date,due_time,archived_at
+        FROM tasks
+        WHERE status='completed' AND archived_date=?
+        ORDER BY archived_at DESC, id DESC
+    """, (today,)).fetchall()
+    return done_rows, task_rows
+
+
+def build_today_done_lines(conn, today):
+    done_rows, task_rows = get_today_done_items(conn, today)
+    if not done_rows and not task_rows:
+        return "", False
+    lines = []
+    shown_count = 0
+    for row in done_rows[:6]:
+        lines.append(f"- {row['text']}")
+        shown_count += 1
+    for row in task_rows[:6]:
+        lines.append(f"- 任务：{row['title']}")
+        shown_count += 1
+    remaining = len(done_rows) + len(task_rows) - shown_count
+    if remaining > 0:
+        lines.append(f"……还有 {remaining} 条，打开 Morning Board 看完整记录。")
+    return "\n".join(lines), True
+
+
+def build_tomorrow_ddl_lines(conn, today):
+    tomorrow = tomorrow_date_str(today)
+    rows = conn.execute("""
+        SELECT title,due_date,due_time,note
+        FROM tasks
+        WHERE status='active' AND due_date=?
+        ORDER BY COALESCE(due_time,'23:59'), id
+    """, (tomorrow,)).fetchall()
+    if not rows:
+        return "- 明天暂时没有 DDL 喵"
+    lines = []
+    shown = rows[:8]
+    for row in shown:
+        time_label = row["due_time"] or "未设时间"
+        lines.append(f"- {time_label} · {row['title']}")
+    remaining = len(rows) - len(shown)
+    if remaining > 0:
+        lines.append(f"……还有 {remaining} 个 DDL，打开 Morning Board 看完整列表。")
+    return "\n".join(lines)
+
+
+def build_telegram_reminder_message(conn, today):
+    today_done, has_done = build_today_done_lines(conn, today)
+    templates = get_telegram_templates()
+    template = templates["with_done"] if has_done else templates["without_done"]
+    values = {
+        "date": format_date_label(today),
+        "today_done": today_done,
+        "tomorrow_ddl": build_tomorrow_ddl_lines(conn, today)
+    }
+    return render_text_template(template, values)
+
 def telegram_reminder_loop():
     while True:
         try:
@@ -222,7 +384,7 @@ def telegram_reminder_loop():
                     if target_minutes is not None and 0 <= current_minutes - target_minutes <= 2:
                         send_key = f"{today}-{reminder_time}"
                         if settings.get("telegram_last_sent_key", "") != send_key:
-                            msg = "该写今天完成了什么、明天先看什么了喵。两行也算胜利喵。"
+                            msg = build_telegram_reminder_message(conn, today)
                             send_telegram_message(
                                 settings.get("telegram_bot_token", ""),
                                 settings.get("telegram_chat_id", ""),
@@ -978,14 +1140,16 @@ def delete_exam_checklist_item(item_id):
 @app.route("/api/telegram/test", methods=["POST"])
 def test_telegram():
     init_db()
+    today = local_today_str()
     with get_conn() as conn:
         settings = get_settings(conn)
+        msg = build_telegram_reminder_message(conn, today)
     token = settings.get("telegram_bot_token", "")
     chat_id = settings.get("telegram_chat_id", "")
     if not token or not chat_id:
         return jsonify({"error": "telegram bot token or chat id is empty"}), 400
     try:
-        send_telegram_message(token, chat_id, "超级可爱喵喵酱测试通知喵")
+        send_telegram_message(token, chat_id, msg)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     return jsonify({"ok": True})

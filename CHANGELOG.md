@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.8.16
+
+- Telegram 晚间提醒改为外部模板文件 `telegram_message_templates.txt`，方便直接编辑文案。
+- 新增两套模板：`[with_done]` 用于今天有完成记录，`[without_done]` 用于今天没有完成记录。
+- 支持 `{{date}}`、`{{today_done}}`、`{{tomorrow_ddl}}` 占位符。
+
+
+## v1.8.13
+
+- Telegram 晚间提醒增加日期标题。
+- Telegram 晚间提醒会附带今天已记录/完成的事项。
+- 保留 v1.8.12 的明天 DDL 截止提醒。
+
+## v1.8.8
+
+- 将 Exam Board 保存提示 toast 调整为和主页一致的屏幕中间下方样式。
+
+# Changelog
+
+## v1.8.9
+
+- Exam Board: 日期/时间选择按钮支持再次点击收起原生选择器。
+
+
 ## v1.8.4
 
 - Exam Board 支持每门课上传多张考试要求截图。
