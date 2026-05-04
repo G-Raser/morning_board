@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, send_from_directory
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from pathlib import Path
 import sqlite3
@@ -8,11 +9,15 @@ import threading
 import time
 import urllib.request
 import urllib.error
+import uuid
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "morning_board.db"
-EXAM_DB_PATH = Path("exam_board.db")
+EXAM_DB_PATH = BASE_DIR / "exam_board.db"
+EXAM_IMAGE_DIR = BASE_DIR / "static" / "uploads" / "exam_evidence"
+ALLOWED_EXAM_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif"}
 app = Flask(__name__, static_folder="static", static_url_path="")
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 CORS(app)
 
 DEFAULT_DAY_START_HOUR = 5
@@ -669,6 +674,20 @@ def get_exam_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
+def allowed_exam_image(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXAM_IMAGE_EXTENSIONS
+
+def exam_image_url(filename):
+    return f"/uploads/exam_evidence/{filename}"
+
+def delete_exam_image_file(filename):
+    if not filename:
+        return
+    try:
+        (EXAM_IMAGE_DIR / filename).unlink(missing_ok=True)
+    except Exception as e:
+        print("[exam image delete error]", e)
+
 def init_exam_db():
     with get_exam_conn() as conn:
         conn.execute("""
@@ -698,6 +717,17 @@ def init_exam_db():
                 FOREIGN KEY(course_id) REFERENCES exam_courses(id)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS exam_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                course_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                original_name TEXT NOT NULL DEFAULT '',
+                mime_type TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(course_id) REFERENCES exam_courses(id)
+            )
+        """)
         conn.commit()
 
 def parse_exam_dt(value):
@@ -717,6 +747,14 @@ def normalize_exam_course(row, conn):
         (course["id"],)
     ).fetchall())
     course["checklist"] = items
+    images = dicts(conn.execute(
+        "SELECT id,course_id,filename,original_name,mime_type,created_at FROM exam_images WHERE course_id=? ORDER BY id DESC",
+        (course["id"],)
+    ).fetchall())
+    for image in images:
+        image["url"] = exam_image_url(image["filename"])
+    course["images"] = images
+    course["image_count"] = len(images)
     done = sum(1 for item in items if int(item.get("done") or 0) == 1)
     total = len(items)
     course["checklist_done"] = done
@@ -733,10 +771,10 @@ def normalize_exam_course(row, conn):
         else:
             days = total_seconds // 86400
             hours = (total_seconds % 86400) // 3600
+            minutes = (total_seconds % 3600) // 60
             if days > 0:
-                course["countdown"] = f"还有 {days} 天 {hours} 小时"
+                course["countdown"] = f"还有 {days} 天 {hours} 小时 {minutes} 分钟"
             else:
-                minutes = (total_seconds % 3600) // 60
                 course["countdown"] = f"还有 {hours} 小时 {minutes} 分钟"
             if days >= 14:
                 course["urgency"] = "calm"
@@ -835,9 +873,65 @@ def update_exam_course(course_id):
 def delete_exam_course(course_id):
     init_exam_db()
     with get_exam_conn() as conn:
+        image_rows = conn.execute("SELECT filename FROM exam_images WHERE course_id=?", (course_id,)).fetchall()
         conn.execute("DELETE FROM exam_checklist WHERE course_id=?", (course_id,))
+        conn.execute("DELETE FROM exam_images WHERE course_id=?", (course_id,))
         conn.execute("DELETE FROM exam_courses WHERE id=?", (course_id,))
         conn.commit()
+    for row in image_rows:
+        delete_exam_image_file(row["filename"])
+    return jsonify({"ok": True})
+
+@app.route("/api/exams/<int:course_id>/images", methods=["POST"])
+def upload_exam_images(course_id):
+    init_exam_db()
+    uploaded_files = request.files.getlist("images") or request.files.getlist("image")
+    uploaded_files = [f for f in uploaded_files if f and f.filename]
+    if not uploaded_files:
+        return jsonify({"error": "no image files uploaded"}), 400
+    for file in uploaded_files:
+        if not allowed_exam_image(file.filename):
+            return jsonify({"error": "only png, jpg, jpeg, webp and gif images are supported"}), 400
+    EXAM_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    now = local_now_str()
+    saved = []
+    with get_exam_conn() as conn:
+        row = conn.execute("SELECT id FROM exam_courses WHERE id=?", (course_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "course not found"}), 404
+        for file in uploaded_files:
+            original_name = file.filename
+            safe_name = secure_filename(original_name) or "screenshot"
+            ext = safe_name.rsplit(".", 1)[1].lower()
+            stem = Path(safe_name).stem[:60] or "screenshot"
+            filename = f"course{course_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}_{stem}.{ext}"
+            file.save(EXAM_IMAGE_DIR / filename)
+            cur = conn.execute(
+                "INSERT INTO exam_images(course_id,filename,original_name,mime_type,created_at) VALUES(?,?,?,?,?)",
+                (course_id, filename, original_name, file.mimetype or "", now)
+            )
+            saved.append({
+                "id": cur.lastrowid,
+                "course_id": course_id,
+                "filename": filename,
+                "original_name": original_name,
+                "mime_type": file.mimetype or "",
+                "created_at": now,
+                "url": exam_image_url(filename)
+            })
+        conn.commit()
+    return jsonify({"ok": True, "images": saved}), 201
+
+@app.route("/api/exams/images/<int:image_id>", methods=["DELETE"])
+def delete_exam_image(image_id):
+    init_exam_db()
+    with get_exam_conn() as conn:
+        row = conn.execute("SELECT filename FROM exam_images WHERE id=?", (image_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "image not found"}), 404
+        conn.execute("DELETE FROM exam_images WHERE id=?", (image_id,))
+        conn.commit()
+    delete_exam_image_file(row["filename"])
     return jsonify({"ok": True})
 
 @app.route("/api/exams/<int:course_id>/checklist", methods=["POST"])

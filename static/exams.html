@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exam Board v1.8.3</title>
+<title>Exam Board v1.8.8</title>
 <script>
 (function(){
   try{
@@ -18,6 +18,7 @@
 :root{--bg:#f7f3ec;--card:#fffaf3;--card2:#fff;--text:#24211c;--muted:#7a7166;--line:#e8dccb;--accent:#6d4c2f;--accent2:#f0dfc7;--danger:#991b1b;--danger-bg:#fee2e2;--good:#166534;--shadow:0 8px 24px rgba(70,45,20,.08)}
 html.dark{--bg:#17151b;--card:#24212b;--card2:#1f1c25;--text:#f4efe7;--muted:#b9ad9f;--line:#3a3443;--accent:#d6b48c;--accent2:#403444;--danger-bg:#4a2025;--danger:#fecaca;--good:#86efac;--shadow:0 8px 24px rgba(0,0,0,.28)}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:24px;overflow-x:hidden}
+body.modal-open{overflow:hidden}
 .wrap{width:min(1120px,calc(100vw - 48px));margin:0 auto;display:grid;gap:18px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:20px;box-shadow:var(--shadow);min-width:0}
 .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
@@ -29,17 +30,9 @@ button{border:1px solid var(--line);border-radius:14px;padding:10px 13px;backgro
 button:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.12)}
 button.light{background:var(--accent2);color:var(--accent)}
 button.danger{background:var(--danger-bg);color:var(--danger)}
+button.small{padding:7px 9px;border-radius:11px;font-size:12px}
+button.icon{width:38px;height:38px;padding:0;border-radius:13px;display:inline-flex;align-items:center;justify-content:center}
 input,textarea,select{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card2);color:var(--text);outline:none;min-width:0;width:100%}
-.input-picker{position:relative;flex:1;min-width:150px}
-.input-picker input{width:100%;padding-right:52px}
-.input-picker input::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
-.picker-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:2;box-shadow:none;font-weight:850}
-.picker-btn:hover{background:var(--accent2);transform:translateY(-50%);box-shadow:none}
-.picker-btn:not(:disabled):hover{transform:translateY(-50%);box-shadow:none}
-.picker-btn:not(:disabled):active{transform:translateY(-50%);filter:brightness(.98)}
-html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,255,.25))}
-.datetime-picker{min-width:0}
-.datetime-picker input{font-variant-numeric:tabular-nums}
 textarea{min-height:84px;resize:vertical;line-height:1.5}
 label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
 .form-grid{display:grid;grid-template-columns:1fr 1.4fr 220px auto;gap:10px;align-items:end}
@@ -61,8 +54,6 @@ label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
 .progress-line{height:10px;border-radius:999px;background:rgba(120,105,85,.16);overflow:hidden}
 .progress-bar{height:100%;width:0;background:linear-gradient(90deg,rgba(224,196,143,.75),rgba(112,153,87,.65));transition:width .35s ease}
 .card-actions{display:flex;gap:8px;flex-wrap:wrap}
-.details{display:none;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px;gap:12px}
-.course-card.open .details{display:grid}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .full{grid-column:1/-1}
 .checklist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
@@ -72,8 +63,41 @@ label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
 .check-form{display:flex;gap:8px}
 .empty{color:var(--muted);border:1px dashed var(--line);border-radius:18px;padding:16px;text-align:center;background:rgba(255,255,255,.22)}
 .notice{background:rgba(224,196,143,.12);border:1px dashed rgba(224,196,143,.35);border-radius:18px;padding:12px 14px;color:var(--muted);line-height:1.55}
-@media(max-width:850px){.form-grid{grid-template-columns:1fr 1fr}.course-grid{grid-template-columns:1fr}}
-@media(max-width:560px){body{padding:14px}.wrap{width:100%}.form-grid,.detail-grid{grid-template-columns:1fr}.check-form{display:grid}}
+.input-picker{position:relative;min-width:0}
+.input-picker input{width:100%;padding-right:52px}
+.input-picker input::-webkit-calendar-picker-indicator{opacity:0;width:44px;height:100%;cursor:pointer}
+.picker-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:2}
+.picker-btn:hover{background:var(--accent2);transform:translateY(-50%);box-shadow:none}
+html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,255,.25))}
+.modal-backdrop{position:fixed;inset:0;z-index:50;display:none;align-items:flex-start;justify-content:center;padding:28px;background:rgba(20,16,12,.45);overflow:auto;backdrop-filter:blur(5px)}
+.modal-backdrop.open{display:flex}
+.modal-panel{width:min(940px,calc(100vw - 32px));max-height:calc(100vh - 56px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:20px;display:grid;gap:16px}
+.modal-head{position:sticky;top:-20px;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:var(--card);border-bottom:1px solid var(--line);padding:0 0 14px}
+.modal-title{display:grid;gap:4px;min-width:0}
+.modal-title h2{word-break:break-word}
+.modal-content{display:grid;gap:16px}
+.modal-section{display:grid;gap:10px;border-top:1px dashed var(--line);padding-top:14px}
+.evidence-box{display:grid;gap:10px;border:1px solid rgba(224,196,143,.22);border-radius:20px;padding:12px;background:rgba(224,196,143,.08)}
+.evidence-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.file-input{flex:1 1 240px;background:var(--card2);font-size:13px}
+.paste-zone{border:1px dashed rgba(224,196,143,.5);border-radius:18px;padding:13px 14px;color:var(--muted);background:rgba(255,255,255,.18);line-height:1.5;outline:none;cursor:text}
+.paste-zone:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(224,196,143,.18);color:var(--text)}
+.image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.image-card{display:grid;gap:7px;border:1px solid var(--line);border-radius:16px;background:var(--card2);padding:8px;min-width:0}
+.image-thumb{display:block;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:rgba(120,105,85,.12);border:1px solid rgba(120,105,85,.12)}
+.image-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.image-name{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.image-card .danger{justify-self:start}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;color:var(--accent)}
+
+.save-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.inline-status{opacity:0;color:var(--good);font-weight:850;transition:opacity .18s ease}
+.inline-status.show{opacity:1}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:99999;display:flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;background:var(--card);color:var(--text);border:1px solid var(--line);box-shadow:var(--shadow);font-weight:700;opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;text-align:center;max-width:min(520px,calc(100vw - 32px))}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+html.dark .toast{background:#2b2533}
+@media(max-width:850px){.form-grid{grid-template-columns:1fr 1fr}.course-grid{grid-template-columns:1fr}.modal-backdrop{padding:16px}.modal-panel{max-height:calc(100vh - 32px)}}
+@media(max-width:560px){body{padding:14px}.wrap{width:100%}.form-grid,.detail-grid{grid-template-columns:1fr}.check-form{display:grid}.evidence-tools{display:grid}.file-input{width:100%}.modal-backdrop{padding:10px}.modal-panel{width:100%;max-height:calc(100vh - 20px);border-radius:22px;padding:16px}.modal-head{top:-16px}}
 </style>
 </head>
 <body>
@@ -89,11 +113,11 @@ label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
   </section>
   <section class="card">
     <h2>添加课程</h2>
-    <p>先只填课程编号、名称和考试时间就够了，其他可以之后在详情里补。</p>
+    <p>先只填课程编号、名称和考试时间就够了，其他可以之后在详情窗口里补。</p>
     <div class="form-grid">
       <label>课程编号<input id="newCode" placeholder="COMP5046"></label>
       <label>课程名<input id="newName" placeholder="Natural Language Processing"></label>
-      <label>考试时间<div class="input-picker datetime-picker"><input id="newExamTime" type="datetime-local" aria-label="考试时间"><button type="button" class="picker-btn" data-picker="newExamTime" aria-label="选择考试时间">📅</button></div></label>
+      <label>考试时间<div class="input-picker"><input id="newExamTime" type="datetime-local"><button type="button" class="picker-btn" data-picker="newExamTime" aria-label="选择考试时间">📅</button></div></label>
       <button id="addCourseBtn">添加课程</button>
     </div>
   </section>
@@ -101,7 +125,7 @@ label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
     <div class="topbar">
       <div>
         <h2>课程复习卡片</h2>
-        <p>只在卡片上放最关键的信息；长内容点开再看。</p>
+        <p>卡片只保留摘要；截图、规则和 checklist 点开详情窗口再看。</p>
       </div>
       <button class="light" id="refreshBtn">刷新倒计时</button>
     </div>
@@ -109,13 +133,28 @@ label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
   </section>
   <section class="card">
     <h2>使用方式</h2>
-    <div class="notice">建议每门课只写一个“下一步行动”，比如“今晚看 Week 9 slides”。重点、cheatsheet 规则、复习进度放进详情里，不要把它们塞回日常 DDL 喵。</div>
+    <div class="notice">建议每门课只写一个“下一步行动”，比如“今晚看 Week 9 slides”。考试要求截图可以直接放到课程详情窗口里，当作原始证据；重点、cheatsheet 规则、复习进度也放进详情窗口，不要把整张卡片撑很长喵。</div>
+  </section>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="courseModal" class="modal-backdrop" hidden>
+  <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <div class="modal-title">
+        <h2 id="modalTitle">课程详情</h2>
+        <p id="modalSubtitle">考试规则、截图证据和复习 checklist 都放这里。</p>
+      </div>
+      <button class="light icon" id="closeModalBtn" aria-label="关闭详情窗口">×</button>
+    </div>
+    <div id="modalContent" class="modal-content"></div>
   </section>
 </div>
 <script>
 const $=id=>document.getElementById(id);
 let state={courses:[]};
-const openCourses=new Set();
+let selectedCourseId=null;
+let saveFlashCourseId=null;
+let toastTimer=null;
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 async function api(path,opt={}){
   const res=await fetch(path,{headers:{"Content-Type":"application/json"},...opt});
@@ -124,6 +163,29 @@ async function api(path,opt={}){
   try{data=text?JSON.parse(text):{}}catch(e){data={error:text||res.statusText}}
   if(!res.ok)throw new Error(data.error||res.statusText);
   return data;
+}
+function courseById(id){return (state.courses||[]).find(c=>String(c.id)===String(id))}
+function showToast(text){
+  const toast=$("toast");
+  toast.textContent=text;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toast.classList.remove("show"),1800);
+}
+function openModal(id){selectedCourseId=String(id);renderModal()}
+function closeModal(){selectedCourseId=null;$('courseModal').classList.remove('open');$('courseModal').setAttribute('hidden','');document.body.classList.remove('modal-open');$('modalContent').innerHTML=''}
+async function uploadImageFiles(courseId,files){
+  const valid=[...files].filter(Boolean);
+  if(!valid.length)return alert("先选择或粘贴截图喵");
+  const fd=new FormData();
+  valid.forEach(file=>fd.append("images",file));
+  const res=await fetch(`/api/exams/${courseId}/images`,{method:"POST",body:fd});
+  const text=await res.text();
+  let data={};
+  try{data=text?JSON.parse(text):{}}catch(e){data={error:text||res.statusText}}
+  if(!res.ok)throw new Error(data.error||res.statusText);
+  selectedCourseId=String(courseId);
+  await load();
 }
 function fmtExamTime(value){
   if(!value)return "未设置";
@@ -137,23 +199,21 @@ function cheatLabel(v){
   if(v==="unknown")return "cheatsheet 未确认";
   return "cheatsheet 未填写";
 }
+function makePastedFile(file){
+  const ext=(file.type||"image/png").split("/")[1]?.replace("jpeg","jpg")||"png";
+  return new File([file],`pasted-exam-evidence-${Date.now()}.${ext}`,{type:file.type||"image/png"});
+}
 async function load(){state=await api("/api/exams");render()}
 function render(){
   const list=$("courseList");
   const courses=state.courses||[];
   list.innerHTML=courses.length?courses.map(courseHtml).join(""):`<div class="empty">还没有课程。先加一门，考试作战室就开张喵。</div>`;
+  renderModal();
 }
 function courseHtml(c){
   const id=String(c.id);
-  const open=openCourses.has(id);
   const percent=c.progress_percent||0;
-  const checklist=(c.checklist||[]).map(item=>`
-    <li class="check-item ${item.done?"done":""}">
-      <input type="checkbox" ${item.done?"checked":""} data-check-done="${item.id}">
-      <div class="check-text">${escapeHtml(item.text)}</div>
-      <button class="danger" data-delete-check="${item.id}">×</button>
-    </li>`).join("") || `<li class="empty">还没有复习 checklist。</li>`;
-  return `<article class="course-card ${escapeHtml(c.urgency||"unknown")} ${open?"open":""}" data-course-id="${id}">
+  return `<article class="course-card ${escapeHtml(c.urgency||"unknown")}" data-course-id="${id}">
     <div class="course-head">
       <div>
         <div class="course-code">${escapeHtml(c.code||"未编号")}</div>
@@ -165,6 +225,7 @@ function courseHtml(c){
       <div>考试：${escapeHtml(fmtExamTime(c.exam_datetime))}</div>
       <div>地点/模式：${escapeHtml(c.exam_location||"未填写")}</div>
       <div>${escapeHtml(cheatLabel(c.cheatsheet_allowed))}</div>
+      <div>截图证据：${c.image_count||0} 张</div>
     </div>
     <div class="next-action">下一步：${escapeHtml(c.next_action||"还没写。可以先写一个最小动作喵。")}</div>
     <div class="progress-wrap">
@@ -172,38 +233,78 @@ function courseHtml(c){
       <div class="progress-line"><div class="progress-bar" style="width:${percent}%"></div></div>
     </div>
     <div class="card-actions">
-      <button class="light" data-toggle-course="${id}">${open?"收起详情":"打开详情"}</button>
+      <button class="light" data-open-course="${id}">查看详情 / 编辑</button>
       <button class="danger" data-delete-course="${id}">删除课程</button>
     </div>
-    <div class="details">
-      <div class="detail-grid">
-        <label>课程编号<input data-field="code" data-course="${id}" value="${escapeHtml(c.code||"")}"></label>
-        <label>课程名<input data-field="name" data-course="${id}" value="${escapeHtml(c.name||"")}"></label>
-        <label>考试时间<div class="input-picker datetime-picker"><input id="examDateTime-${id}" type="datetime-local" data-field="exam_datetime" data-course="${id}" value="${escapeHtml(c.exam_datetime||"")}" aria-label="考试时间"><button type="button" class="picker-btn" data-picker="examDateTime-${id}" aria-label="选择考试时间">📅</button></div></label>
-        <label>地点/模式<input data-field="exam_location" data-course="${id}" value="${escapeHtml(c.exam_location||"")}"></label>
-        <label>考试时长<input data-field="exam_duration" data-course="${id}" value="${escapeHtml(c.exam_duration||"")}"></label>
-        <label>cheatsheet
-          <select data-field="cheatsheet_allowed" data-course="${id}">
-            <option value="" ${!c.cheatsheet_allowed?"selected":""}>未填写</option>
-            <option value="unknown" ${c.cheatsheet_allowed==="unknown"?"selected":""}>未确认</option>
-            <option value="yes" ${c.cheatsheet_allowed==="yes"?"selected":""}>允许</option>
-            <option value="no" ${c.cheatsheet_allowed==="no"?"selected":""}>不允许</option>
-          </select>
-        </label>
-        <label class="full">cheatsheet / 考试规则备注<textarea data-field="cheatsheet_note" data-course="${id}">${escapeHtml(c.cheatsheet_note||"")}</textarea></label>
-        <label class="full">复习重点<textarea data-field="focus_note" data-course="${id}">${escapeHtml(c.focus_note||"")}</textarea></label>
-        <label class="full">目前复习进度<textarea data-field="progress_note" data-course="${id}">${escapeHtml(c.progress_note||"")}</textarea></label>
-        <label class="full">当前最该做的一步<input data-field="next_action" data-course="${id}" value="${escapeHtml(c.next_action||"")}"></label>
-      </div>
-      <div class="card-actions"><button data-save-course="${id}">保存课程详情</button></div>
-      <h3>复习 checklist</h3>
-      <div class="check-form">
-        <input data-new-check="${id}" placeholder="比如：Week 9 slides 过一遍">
-        <button data-add-check="${id}">添加</button>
-      </div>
-      <ul class="checklist">${checklist}</ul>
-    </div>
   </article>`;
+}
+function courseDetailHtml(c){
+  const id=String(c.id);
+  const checklist=(c.checklist||[]).map(item=>`
+    <li class="check-item ${item.done?"done":""}">
+      <input type="checkbox" ${item.done?"checked":""} data-check-done="${item.id}">
+      <div class="check-text">${escapeHtml(item.text)}</div>
+      <button class="danger" data-delete-check="${item.id}">×</button>
+    </li>`).join("") || `<li class="empty">还没有复习 checklist。</li>`;
+  const images=(c.images||[]).map(image=>`
+    <div class="image-card">
+      <a class="image-thumb" href="${escapeHtml(image.url)}" target="_blank" rel="noopener" title="打开原图">
+        <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.original_name||"考试要求截图")}">
+      </a>
+      <div class="image-name" title="${escapeHtml(image.original_name||"截图")}">${escapeHtml(image.original_name||"截图")}</div>
+      <button class="danger small" data-delete-image="${image.id}">删除</button>
+    </div>`).join("") || `<div class="empty">还没有截图证据。可以上传 Canvas、邮件、课程大纲或考试要求截图。</div>`;
+  return `<div class="detail-grid">
+    <label>课程编号<input data-field="code" data-course="${id}" value="${escapeHtml(c.code||"")}"></label>
+    <label>课程名<input data-field="name" data-course="${id}" value="${escapeHtml(c.name||"")}"></label>
+    <label>考试时间<div class="input-picker"><input id="examTime-${id}" type="datetime-local" data-field="exam_datetime" data-course="${id}" value="${escapeHtml(c.exam_datetime||"")}"><button type="button" class="picker-btn" data-picker="examTime-${id}" aria-label="选择考试时间">📅</button></div></label>
+    <label>地点/模式<input data-field="exam_location" data-course="${id}" value="${escapeHtml(c.exam_location||"")}"></label>
+    <label>考试时长<input data-field="exam_duration" data-course="${id}" value="${escapeHtml(c.exam_duration||"")}"></label>
+    <label>cheatsheet
+      <select data-field="cheatsheet_allowed" data-course="${id}">
+        <option value="" ${!c.cheatsheet_allowed?"selected":""}>未填写</option>
+        <option value="unknown" ${c.cheatsheet_allowed==="unknown"?"selected":""}>未确认</option>
+        <option value="yes" ${c.cheatsheet_allowed==="yes"?"selected":""}>允许</option>
+        <option value="no" ${c.cheatsheet_allowed==="no"?"selected":""}>不允许</option>
+      </select>
+    </label>
+    <label class="full">cheatsheet / 考试规则备注<textarea data-field="cheatsheet_note" data-course="${id}">${escapeHtml(c.cheatsheet_note||"")}</textarea></label>
+    <label class="full">复习重点<textarea data-field="focus_note" data-course="${id}">${escapeHtml(c.focus_note||"")}</textarea></label>
+    <label class="full">目前复习进度<textarea data-field="progress_note" data-course="${id}">${escapeHtml(c.progress_note||"")}</textarea></label>
+    <label class="full">当前最该做的一步<input data-field="next_action" data-course="${id}" value="${escapeHtml(c.next_action||"")}"></label>
+  </div>
+  <div class="card-actions save-row"><button data-save-course="${id}">保存课程详情</button><span class="inline-status ${saveFlashCourseId===id?"show":""}" data-save-status="${id}">已保存 ✓</span></div>
+  <div class="modal-section">
+    <h3>考试要求截图 / 铁证考据</h3>
+    <div class="evidence-box">
+      <div class="notice">可以上传 Canvas、邮件、课程大纲、考试说明等截图。截图会存在本机 <code>static/uploads/exam_evidence</code> 里，并跟这门课绑定。</div>
+      <div class="evidence-tools">
+        <input class="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-input="${id}">
+        <button class="light" data-upload-images="${id}">上传截图</button>
+      </div>
+      <div class="paste-zone" tabindex="0" data-paste-course="${id}">点这里后直接 Ctrl+V / Cmd+V 粘贴截图。适合把考试要求截图当作“原始证据”存起来。</div>
+      <div class="image-grid">${images}</div>
+    </div>
+  </div>
+  <div class="modal-section">
+    <h3>复习 checklist</h3>
+    <div class="check-form">
+      <input data-new-check="${id}" placeholder="比如：Week 9 slides 过一遍">
+      <button data-add-check="${id}">添加</button>
+    </div>
+    <ul class="checklist">${checklist}</ul>
+  </div>`;
+}
+function renderModal(){
+  if(!selectedCourseId)return;
+  const c=courseById(selectedCourseId);
+  if(!c){closeModal();return}
+  $("modalTitle").textContent=`${c.code||"未编号"} · ${c.name||"未命名课程"}`;
+  $("modalSubtitle").textContent=`${c.countdown||"未设置考试时间"}｜${fmtExamTime(c.exam_datetime)}｜截图 ${c.image_count||0} 张`;
+  $("modalContent").innerHTML=courseDetailHtml(c);
+  $("courseModal").removeAttribute("hidden");
+  $("courseModal").classList.add("open");
+  document.body.classList.add("modal-open");
 }
 $("addCourseBtn").onclick=async()=>{
   const code=$("newCode").value.trim();
@@ -212,26 +313,66 @@ $("addCourseBtn").onclick=async()=>{
   if(!code&&!name)return alert("至少写课程编号或课程名喵");
   const c=await api("/api/exams",{method:"POST",body:JSON.stringify({code,name,exam_datetime})});
   $("newCode").value="";$("newName").value="";$("newExamTime").value="";
-  openCourses.add(String(c.id));
+  selectedCourseId=String(c.id);
   await load();
 };
 $("refreshBtn").onclick=load;
+$("closeModalBtn").onclick=closeModal;
+$("courseModal").addEventListener("click",e=>{if(e.target.id==="courseModal")closeModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&selectedCourseId)closeModal()});
 document.body.onclick=async e=>{
   const btn=e.target.closest("button");
   if(!btn)return;
-  const toggle=btn.dataset.toggleCourse, save=btn.dataset.saveCourse, del=btn.dataset.deleteCourse;
-  const addCheck=btn.dataset.addCheck, delCheck=btn.dataset.deleteCheck;
-  if(toggle){openCourses.has(toggle)?openCourses.delete(toggle):openCourses.add(toggle);render()}
+  const picker=btn.dataset.picker;
+  if(picker){
+    const input=$(picker);
+    if(input?.showPicker)input.showPicker();
+    else input?.focus();
+    return;
+  }
+  const open=btn.dataset.openCourse, save=btn.dataset.saveCourse, del=btn.dataset.deleteCourse;
+  const addCheck=btn.dataset.addCheck, delCheck=btn.dataset.deleteCheck, uploadImages=btn.dataset.uploadImages, delImage=btn.dataset.deleteImage;
+  if(open){openModal(open);return}
   if(save){
     const patch={};
     document.querySelectorAll(`[data-course="${save}"][data-field]`).forEach(el=>patch[el.dataset.field]=el.value);
-    await api(`/api/exams/${save}`,{method:"PATCH",body:JSON.stringify(patch)});
-    openCourses.add(String(save));await load();
+    btn.disabled=true;
+    btn.textContent="保存中…";
+    try{
+      await api(`/api/exams/${save}`,{method:"PATCH",body:JSON.stringify(patch)});
+      selectedCourseId=String(save);
+      saveFlashCourseId=String(save);
+      showToast("课程详情已保存 ✓");
+      await load();
+      setTimeout(()=>{
+        if(saveFlashCourseId===String(save)){
+          saveFlashCourseId=null;
+          const status=document.querySelector(`[data-save-status="${save}"]`);
+          status?.classList.remove("show");
+        }
+      },1800);
+    }catch(err){
+      showToast("保存失败："+err.message);
+    }finally{
+      btn.disabled=false;
+      btn.textContent="保存课程详情";
+    }
   }
   if(del){
-    if(confirm("确定删除这门课程和它的 checklist 吗？")){
+    if(confirm("确定删除这门课程、它的 checklist 和所有截图吗？")){
       await api(`/api/exams/${del}`,{method:"DELETE"});
-      openCourses.delete(String(del));await load();
+      if(selectedCourseId===String(del))closeModal();
+      await load();
+    }
+  }
+  if(uploadImages){
+    const input=document.querySelector(`[data-image-input="${uploadImages}"]`);
+    try{await uploadImageFiles(uploadImages,input?.files||[]);if(input)input.value=""}catch(err){alert("上传失败："+err.message)}
+  }
+  if(delImage){
+    if(confirm("确定删除这张截图吗？")){
+      await api(`/api/exams/images/${delImage}`,{method:"DELETE"});
+      await load();
     }
   }
   if(addCheck){
@@ -239,7 +380,7 @@ document.body.onclick=async e=>{
     const text=(input?.value||"").trim();
     if(!text)return;
     await api(`/api/exams/${addCheck}/checklist`,{method:"POST",body:JSON.stringify({text})});
-    input.value="";openCourses.add(String(addCheck));await load();
+    input.value="";selectedCourseId=String(addCheck);await load();
   }
   if(delCheck){await api(`/api/exams/checklist/${delCheck}`,{method:"DELETE"});await load()}
 };
@@ -249,20 +390,22 @@ document.body.onchange=async e=>{
   await api(`/api/exams/checklist/${cb.dataset.checkDone}`,{method:"PATCH",body:JSON.stringify({done:cb.checked})});
   await load();
 };
-document.addEventListener("click",e=>{
-  const btn=e.target.closest("[data-picker]");
-  if(!btn)return;
-  const input=$(btn.dataset.picker);
-  if(!input)return;
-  if(input.showPicker){
-    input.showPicker();
-  }else{
-    input.focus();
-    input.click();
+document.body.addEventListener("paste",async e=>{
+  const zone=e.target.closest("[data-paste-course]");
+  if(!zone||!e.clipboardData?.items)return;
+  const files=[];
+  for(const item of e.clipboardData.items){
+    if(item.type&&item.type.startsWith("image/")){
+      const file=item.getAsFile();
+      if(file)files.push(makePastedFile(file));
+    }
   }
+  if(!files.length)return;
+  e.preventDefault();
+  try{await uploadImageFiles(zone.dataset.pasteCourse,files)}catch(err){alert("粘贴上传失败："+err.message)}
 });
 load().catch(err=>alert("加载失败："+err.message));
-setInterval(load,60000);
+setInterval(()=>{if(!selectedCourseId)load()},60000);
 </script>
 </body>
 </html>
