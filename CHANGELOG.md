@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.8.17
+- Telegram 晚间提醒模板支持 `{{tomorrow_ddl_section}}`。
+- 明天没有 DDL 时，整段 DDL 提醒会自动隐藏，不再显示“暂时没有 DDL”。
+
+
 ## v1.8.16
 
 - Telegram 晚间提醒改为外部模板文件 `telegram_message_templates.txt`，方便直接编辑文案。

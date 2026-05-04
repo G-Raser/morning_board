@@ -10,6 +10,7 @@ import time
 import urllib.request
 import urllib.error
 import uuid
+import re
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "morning_board.db"
@@ -224,9 +225,11 @@ def tomorrow_date_str(today):
 
 DEFAULT_TELEGRAM_TEMPLATE_FILE = """# Telegram 晚间提醒模板
 # 你可以直接改这里的文案。
-# 请尽量保留这些占位符：{{date}}、{{today_done}}、{{tomorrow_ddl}}
+# 建议保留这些占位符：{{date}}、{{today_done}}、{{tomorrow_ddl_section}}
+# {{date}} 会自动替换成日期。
 # {{today_done}} 会自动替换成今天完成事项列表。
-# {{tomorrow_ddl}} 会自动替换成明天 DDL 列表；如果没有 DDL，会显示一条“暂时没有 DDL”。
+# {{tomorrow_ddl_section}} 会自动替换成完整 DDL 段落；如果明天没有 DDL，会自动消失。
+# 如果想改 DDL 段落本身，请改下面的 [ddl_section]。
 
 [with_done]
 📅 {{date}}
@@ -238,9 +241,7 @@ DEFAULT_TELEGRAM_TEMPLATE_FILE = """# Telegram 晚间提醒模板
 
 主人好棒！每一步无论大小都值得肯定喵៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
 
-这是明天要留意的 DDL喵：
-
-{{tomorrow_ddl}}
+{{tomorrow_ddl_section}}
 
 记得给明天的自己写点小提醒喵：
 
@@ -255,17 +256,20 @@ DEFAULT_TELEGRAM_TEMPLATE_FILE = """# Telegram 晚间提醒模板
 今天还没记录完成事项哦。
 休息休息也很好喵，也可以随手写点简单的小事，比如“整理了一点资料”之类的喵៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
 
-这是明天要留意的 DDL喵：
-
-{{tomorrow_ddl}}
+{{tomorrow_ddl_section}}
 
 记得给明天的自己写点小提醒喵：
 
 1. 今天完成了什么
 2. 明天最先看什么
 [/without_done]
-"""
 
+[ddl_section]
+这是明天要留意的 DDL喵：
+
+{{tomorrow_ddl}}
+[/ddl_section]
+"""
 
 def ensure_telegram_template_file():
     if not TELEGRAM_TEMPLATE_PATH.exists():
@@ -274,7 +278,7 @@ def ensure_telegram_template_file():
 
 def parse_telegram_templates(raw_text):
     templates = {}
-    for name in ("with_done", "without_done"):
+    for name in ("with_done", "without_done", "ddl_section"):
         start_tag = f"[{name}]"
         end_tag = f"[/{name}]"
         start = raw_text.find(start_tag)
@@ -291,16 +295,24 @@ def get_telegram_templates():
         templates = parse_telegram_templates(raw_text)
     except Exception:
         templates = {}
+    default_templates = parse_telegram_templates(DEFAULT_TELEGRAM_TEMPLATE_FILE)
     if "with_done" not in templates or "without_done" not in templates:
-        templates = parse_telegram_templates(DEFAULT_TELEGRAM_TEMPLATE_FILE)
+        templates = default_templates
+    if "ddl_section" not in templates:
+        templates["ddl_section"] = default_templates["ddl_section"]
     return templates
 
+
+def cleanup_telegram_message(text):
+    lines = [line.rstrip() for line in text.splitlines()]
+    text = "\n".join(lines).strip()
+    return re.sub(r"\n{3,}", "\n\n", text)
 
 def render_text_template(template, values):
     text = template
     for key, value in values.items():
         text = text.replace("{{" + key + "}}", str(value))
-    return text.strip()
+    return cleanup_telegram_message(text)
 
 
 def get_today_done_items(conn, today):
@@ -346,7 +358,7 @@ def build_tomorrow_ddl_lines(conn, today):
         ORDER BY COALESCE(due_time,'23:59'), id
     """, (tomorrow,)).fetchall()
     if not rows:
-        return "- 明天暂时没有 DDL 喵"
+        return "", False
     lines = []
     shown = rows[:8]
     for row in shown:
@@ -355,17 +367,22 @@ def build_tomorrow_ddl_lines(conn, today):
     remaining = len(rows) - len(shown)
     if remaining > 0:
         lines.append(f"……还有 {remaining} 个 DDL，打开 Morning Board 看完整列表。")
-    return "\n".join(lines)
+    return "\n".join(lines), True
 
 
 def build_telegram_reminder_message(conn, today):
     today_done, has_done = build_today_done_lines(conn, today)
+    tomorrow_ddl, has_ddl = build_tomorrow_ddl_lines(conn, today)
     templates = get_telegram_templates()
     template = templates["with_done"] if has_done else templates["without_done"]
+    tomorrow_ddl_section = ""
+    if has_ddl:
+        tomorrow_ddl_section = render_text_template(templates["ddl_section"], {"tomorrow_ddl": tomorrow_ddl})
     values = {
         "date": format_date_label(today),
         "today_done": today_done,
-        "tomorrow_ddl": build_tomorrow_ddl_lines(conn, today)
+        "tomorrow_ddl": tomorrow_ddl,
+        "tomorrow_ddl_section": tomorrow_ddl_section
     }
     return render_text_template(template, values)
 
