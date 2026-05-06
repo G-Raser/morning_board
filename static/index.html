@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10</title>
+<title>醒来先看 v1.10.1</title>
 <script>
 (function(){
   try{
@@ -82,7 +82,8 @@ li{display:flex;justify-content:space-between;gap:12px;align-items:center;border
 .active-task.category-study,.ddl-card.category-study{--ddl-category-color:rgba(166,91,178,.62)}
 html.dark .active-task.category-life,html.dark .ddl-card.category-life{--ddl-category-color:rgba(232,203,145,.68)}
 html.dark .active-task.category-study,html.dark .ddl-card.category-study{--ddl-category-color:rgba(180,91,190,.72)}
-.task-title-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.task-title-row{display:flex;align-items:flex-start;flex-direction:column;gap:8px}
+.task-category-line,.ddl-tag-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .task-category-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:850;line-height:1;border:1px solid transparent}
 .task-category-pill.life{background:rgba(218,190,132,.14);color:#8a6a2f;border-color:rgba(218,190,132,.25)}
 .task-category-pill.study{background:rgba(166,91,178,.14);color:#7c3f89;border-color:rgba(166,91,178,.24)}
@@ -444,8 +445,8 @@ html.dark .thought-item-delete{
 .ddl-content{min-width:0}
 .ddl-title-row{
   display:flex;
-  align-items:center;
-  flex-wrap:wrap;
+  align-items:flex-start;
+  flex-direction:column;
   gap:8px;
 }
 .ddl-title{
@@ -1362,13 +1363,13 @@ function listCompleted(el,arr){
     const chip=isExpired?"过期归档":"完成归档";
     const meta=[dueLabel(x), x.note?x.note:"", archiveMeta(x)].filter(Boolean).map(escapeHtml).join(" · ");
     const category=taskCategory(x);
-    return `<li class="ddl-card ${cls} category-${category}"><div class="ddl-mark">${mark}</div><div class="ddl-content"><div class="ddl-title-row"><span class="ddl-title">${escapeHtml(x.title)}</span>${taskCategoryPill(x)}<span class="ddl-chip">${chip}</span></div><div class="ddl-meta">${meta}</div></div><div class="ddl-actions">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
+    return `<li class="ddl-card ${cls} category-${category}"><div class="ddl-mark">${mark}</div><div class="ddl-content"><div class="ddl-title-row"><span class="ddl-title">${escapeHtml(x.title)}</span><div class="ddl-tag-row">${taskCategoryPill(x)}<span class="ddl-chip">${chip}</span></div></div><div class="ddl-meta">${meta}</div></div><div class="ddl-actions">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
   }).join(""):`<li class="ddl-empty"><div class="empty">没有归档的 DDL。今天暂时没有旧怪尸体喵。</div></li>`;
 }
 function listActive(el,arr){
   el.innerHTML=arr.length?arr.map(x=>{
     const category=taskCategory(x);
-    return `<li class="active-task category-${category}" data-task-id="${x.id}"><div class="task-main"><div class="task-title-row"><div class="task-title">${escapeHtml(x.title)}</div>${taskCategoryPill(x)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}" data-edit-category="${category}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
+    return `<li class="active-task category-${category}" data-task-id="${x.id}"><div class="task-main"><div class="task-title-row"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-category-line">${taskCategoryPill(x)}</div></div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}" data-edit-category="${category}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
   }).join(""):empty("没有未完成 DDL。少一个怪，真好。")
 }
 let archiveReloading=false;
