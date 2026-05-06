@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10.1</title>
+<title>醒来先看 v1.10.2</title>
 <script>
 (function(){
   try{
@@ -79,16 +79,16 @@ li{display:flex;justify-content:space-between;gap:12px;align-items:center;border
 .active-task{position:relative;overflow:hidden;--ddl-category-color:rgba(122,113,102,.36)}
 .active-task::after,.ddl-card::after{content:"";position:absolute;inset:-1px;border:2px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.82}
 .active-task.category-life,.ddl-card.category-life{--ddl-category-color:rgba(218,190,132,.58)}
-.active-task.category-study,.ddl-card.category-study{--ddl-category-color:rgba(166,91,178,.62)}
+.active-task.category-study,.ddl-card.category-study{--ddl-category-color:rgba(174,153,184,.60)}
 html.dark .active-task.category-life,html.dark .ddl-card.category-life{--ddl-category-color:rgba(232,203,145,.68)}
-html.dark .active-task.category-study,html.dark .ddl-card.category-study{--ddl-category-color:rgba(180,91,190,.72)}
+html.dark .active-task.category-study,html.dark .ddl-card.category-study{--ddl-category-color:rgba(190,166,202,.72)}
 .task-title-row{display:flex;align-items:flex-start;flex-direction:column;gap:8px}
 .task-category-line,.ddl-tag-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .task-category-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:850;line-height:1;border:1px solid transparent}
 .task-category-pill.life{background:rgba(218,190,132,.14);color:#8a6a2f;border-color:rgba(218,190,132,.25)}
-.task-category-pill.study{background:rgba(166,91,178,.14);color:#7c3f89;border-color:rgba(166,91,178,.24)}
+.task-category-pill.study{background:rgba(174,153,184,.15);color:#6d5b76;border-color:rgba(174,153,184,.30)}
 html.dark .task-category-pill.life{background:rgba(232,203,145,.16);color:#ead3a0;border-color:rgba(232,203,145,.32)}
-html.dark .task-category-pill.study{background:rgba(180,91,190,.18);color:#e3b7ea;border-color:rgba(180,91,190,.30)}
+html.dark .task-category-pill.study{background:rgba(190,166,202,.20);color:#e5d5ea;border-color:rgba(190,166,202,.36)}
 .task-main{min-width:0}.task-title{font-weight:700;word-break:break-word}.task-meta{font-size:13px;color:var(--muted);margin-top:4px}
 .badge{display:inline-block;border-radius:999px;padding:6px 10px;font-size:13px;white-space:nowrap}
 .ok{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.urgent{background:#ffedd5;color:#9a3412}.late{background:#fee2e2;color:#991b1b}.none{background:#f4f4f5;color:#52525b}
@@ -419,6 +419,14 @@ html.dark .thought-item-delete{
   border-color:rgba(112,153,87,.34);
   background:linear-gradient(135deg,rgba(176,201,128,.25),rgba(224,196,143,.13));
 }
+.ddl-card.completed.category-life{
+  border-color:rgba(218,190,132,.34);
+  background:linear-gradient(135deg,rgba(218,190,132,.18),rgba(224,196,143,.12));
+}
+.ddl-card.completed.category-study{
+  border-color:rgba(174,153,184,.32);
+  background:linear-gradient(135deg,rgba(174,153,184,.16),rgba(112,96,124,.09));
+}
 .ddl-card.expired{
   border-color:rgba(153,27,27,.26);
   background:linear-gradient(135deg,rgba(90,37,40,.25),rgba(74,59,82,.10));
@@ -437,6 +445,14 @@ html.dark .thought-item-delete{
 .ddl-card.completed .ddl-mark{
   background:rgba(183,205,137,.34);
   color:#365c2b;
+}
+.ddl-card.completed.category-life .ddl-mark{
+  background:rgba(224,196,143,.26);
+  color:#6f5629;
+}
+.ddl-card.completed.category-study .ddl-mark{
+  background:rgba(174,153,184,.22);
+  color:#66536f;
 }
 .ddl-card.expired .ddl-mark{
   background:rgba(90,37,40,.42);
@@ -502,9 +518,25 @@ html.dark .ddl-card.completed{
   border-color:rgba(224,196,143,.24);
   background:linear-gradient(135deg,rgba(176,201,128,.18),rgba(224,196,143,.10));
 }
+html.dark .ddl-card.completed.category-life{
+  border-color:rgba(232,203,145,.30);
+  background:linear-gradient(135deg,rgba(232,203,145,.14),rgba(224,196,143,.08));
+}
+html.dark .ddl-card.completed.category-study{
+  border-color:rgba(190,166,202,.34);
+  background:linear-gradient(135deg,rgba(190,166,202,.16),rgba(104,88,118,.13));
+}
 html.dark .ddl-card.completed .ddl-mark{
   background:rgba(224,196,143,.22);
   color:#ead7b3;
+}
+html.dark .ddl-card.completed.category-life .ddl-mark{
+  background:rgba(232,203,145,.20);
+  color:#ead3a0;
+}
+html.dark .ddl-card.completed.category-study .ddl-mark{
+  background:rgba(190,166,202,.21);
+  color:#e5d5ea;
 }
 html.dark .ddl-card.completed .ddl-chip{
   background:rgba(22,101,52,.30);
