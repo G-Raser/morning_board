@@ -1405,5 +1405,5 @@ if __name__ == "__main__":
     init_exam_db()
     start_background_scheduler()
     # app.run(host="127.0.0.1", port=5001, debug=True, use_reloader=False)
-    app.run(host="100.97.142.99", port=5001, debug=True, use_reloader=False)
-    # app.run(host="100.97.142.99", port=5000, debug=False, use_reloader=False)
+    # app.run(host="100.97.142.99", port=5001, debug=True, use_reloader=False)
+    app.run(host="100.97.142.99", port=5000, debug=False, use_reloader=False)
