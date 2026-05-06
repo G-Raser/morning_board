@@ -77,7 +77,8 @@ html.dark button.good{background:#15803d}
 ul{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
 li{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:17px;padding:12px;background:var(--card2)}
 .active-task{position:relative;overflow:hidden;--ddl-category-color:rgba(122,113,102,.36)}
-.active-task::after,.ddl-card::after{content:"";position:absolute;inset:-1px;border:2px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.82}
+.active-task::after{content:"";position:absolute;inset:-1px;border:3px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.92}
+.ddl-card::after{content:"";position:absolute;inset:-1px;border:2px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.82}
 .active-task.category-life,.ddl-card.category-life{--ddl-category-color:rgba(218,190,132,.58)}
 .active-task.category-study,.ddl-card.category-study{--ddl-category-color:rgba(174,153,184,.60)}
 html.dark .active-task.category-life,html.dark .ddl-card.category-life{--ddl-category-color:rgba(232,203,145,.68)}
