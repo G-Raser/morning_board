@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exam Board v1.8.9</title>
+<title>Exam Board v1.9.2</title>
 <script>
 (function(){
   try{
@@ -25,7 +25,9 @@ body.modal-open{overflow:hidden}
 h1,h2,h3{margin:0}h1{font-size:31px;letter-spacing:-.02em}h2{font-size:22px}h3{font-size:16px;color:var(--muted)}
 p{margin:6px 0;color:var(--muted);line-height:1.5}
 a,button,input,textarea,select{font:inherit}
-a.back{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--accent2);color:var(--accent);text-decoration:none;font-weight:850;border:1px solid rgba(109,76,47,.12)}
+a.back{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--accent2);color:var(--accent);text-decoration:none;font-weight:850;border:1px solid rgba(109,76,47,.12);box-shadow:0 6px 16px rgba(70,45,20,.06);transition:filter .18s ease,transform .12s ease,box-shadow .18s ease,border-color .18s ease}
+a.back:hover{filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.10)}
+html.dark a.back{border-color:rgba(214,180,140,.18)}
 button{border:1px solid var(--line);border-radius:14px;padding:10px 13px;background:var(--accent);color:#fffaf3;font-weight:850;cursor:pointer;transition:filter .18s ease,transform .12s ease,box-shadow .18s ease}
 button:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.12)}
 button.light{background:var(--accent2);color:var(--accent)}
@@ -84,8 +86,17 @@ html.dark .picker-btn{color:var(--text);filter:drop-shadow(0 0 2px rgba(255,255,
 .paste-zone:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(224,196,143,.18);color:var(--text)}
 .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .image-card{display:grid;gap:7px;border:1px solid var(--line);border-radius:16px;background:var(--card2);padding:8px;min-width:0}
-.image-thumb{display:block;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:rgba(120,105,85,.12);border:1px solid rgba(120,105,85,.12)}
+.image-thumb{display:block;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:rgba(120,105,85,.12);border:1px solid rgba(120,105,85,.12);padding:0;width:100%;cursor:zoom-in;color:inherit}
+button.image-thumb:hover{filter:none;transform:none;box-shadow:none}
 .image-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.image-viewer-backdrop{z-index:80;align-items:center;justify-content:center;padding:18px;background:rgba(9,7,12,.68);backdrop-filter:blur(7px)}
+.image-viewer-panel{position:relative;width:min(96vw,1180px);height:min(90vh,860px);max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;display:flex;align-items:center;justify-content:center}
+.image-viewer-head{position:absolute;left:12px;right:12px;top:12px;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border-bottom:0;padding:0;pointer-events:none}
+.image-viewer-title{min-width:0;max-width:min(620px,calc(100vw - 112px));font-size:13px;font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);background:rgba(255,250,243,.82);border:1px solid rgba(232,220,203,.72);border-radius:999px;padding:7px 11px;box-shadow:0 10px 28px rgba(0,0,0,.18);backdrop-filter:blur(9px)}
+html.dark .image-viewer-title{color:#eadfce;background:rgba(36,33,43,.78);border-color:rgba(255,255,255,.10)}
+.image-viewer-head .icon{pointer-events:auto;width:46px;height:46px;border-radius:16px;background:rgba(255,250,243,.84);color:var(--accent);box-shadow:0 12px 34px rgba(0,0,0,.24);backdrop-filter:blur(9px)}
+html.dark .image-viewer-head .icon{background:rgba(64,52,68,.86);color:#eadfce;border-color:rgba(255,255,255,.10)}
+.image-viewer-img{display:block;width:100%;height:100%;object-fit:contain;border-radius:18px;background:rgba(120,105,85,.10);filter:drop-shadow(0 22px 54px rgba(0,0,0,.42))}
 .image-name{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .image-card .danger{justify-self:start}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;color:var(--accent)}
@@ -96,6 +107,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;col
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:99999;display:flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;background:var(--card);color:var(--text);border:1px solid var(--line);box-shadow:var(--shadow);font-weight:700;opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;text-align:center;max-width:min(520px,calc(100vw - 32px))}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 html.dark .toast{background:#2b2533}
+@media(hover:none){a.back:hover{filter:none;transform:none;box-shadow:0 6px 16px rgba(70,45,20,.06)}}
 @media(max-width:850px){.form-grid{grid-template-columns:1fr 1fr}.course-grid{grid-template-columns:1fr}.modal-backdrop{padding:16px}.modal-panel{max-height:calc(100vh - 32px)}}
 @media(max-width:560px){body{padding:14px}.wrap{width:100%}.form-grid,.detail-grid{grid-template-columns:1fr}.check-form{display:grid}.evidence-tools{display:grid}.file-input{width:100%}.modal-backdrop{padding:10px}.modal-panel{width:100%;max-height:calc(100vh - 20px);border-radius:22px;padding:16px}.modal-head{top:-16px}}
 </style>
@@ -149,6 +161,15 @@ html.dark .toast{background:#2b2533}
     <div id="modalContent" class="modal-content"></div>
   </section>
 </div>
+<div id="imageModal" class="modal-backdrop image-viewer-backdrop" hidden>
+  <section class="image-viewer-panel" role="dialog" aria-modal="true" aria-labelledby="imageModalTitle">
+    <div class="image-viewer-head">
+      <div id="imageModalTitle" class="image-viewer-title">截图预览</div>
+      <button class="light icon" id="closeImageModalBtn" aria-label="关闭截图预览">×</button>
+    </div>
+    <img id="imageModalImg" class="image-viewer-img" src="" alt="截图预览">
+  </section>
+</div>
 <script>
 const $=id=>document.getElementById(id);
 let state={courses:[]};
@@ -173,7 +194,9 @@ function showToast(text){
   toastTimer=setTimeout(()=>toast.classList.remove("show"),1800);
 }
 function openModal(id){selectedCourseId=String(id);renderModal()}
-function closeModal(){selectedCourseId=null;$('courseModal').classList.remove('open');$('courseModal').setAttribute('hidden','');document.body.classList.remove('modal-open');$('modalContent').innerHTML=''}
+function closeModal(){closeImageModal();selectedCourseId=null;$('courseModal').classList.remove('open');$('courseModal').setAttribute('hidden','');document.body.classList.remove('modal-open');$('modalContent').innerHTML=''}
+function openImageModal(src,title){$("imageModalImg").src=src;$("imageModalTitle").textContent=title||"截图预览";$("imageModal").removeAttribute("hidden");$("imageModal").classList.add("open")}
+function closeImageModal(){const modal=$("imageModal");if(!modal)return;modal.classList.remove("open");modal.setAttribute("hidden","");$("imageModalImg").src=""}
 async function uploadImageFiles(courseId,files){
   const valid=[...files].filter(Boolean);
   if(!valid.length)return alert("先选择或粘贴截图喵");
@@ -248,9 +271,9 @@ function courseDetailHtml(c){
     </li>`).join("") || `<li class="empty">还没有复习 checklist。</li>`;
   const images=(c.images||[]).map(image=>`
     <div class="image-card">
-      <a class="image-thumb" href="${escapeHtml(image.url)}" target="_blank" rel="noopener" title="打开原图">
+      <button type="button" class="image-thumb" data-preview-image="${escapeHtml(image.url)}" data-preview-title="${escapeHtml(image.original_name||"考试要求截图")}" title="预览截图">
         <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.original_name||"考试要求截图")}">
-      </a>
+      </button>
       <div class="image-name" title="${escapeHtml(image.original_name||"截图")}">${escapeHtml(image.original_name||"截图")}</div>
       <button class="danger small" data-delete-image="${image.id}">删除</button>
     </div>`).join("") || `<div class="empty">还没有截图证据。可以上传 Canvas、邮件、课程大纲或考试要求截图。</div>`;
@@ -319,7 +342,20 @@ $("addCourseBtn").onclick=async()=>{
 $("refreshBtn").onclick=load;
 $("closeModalBtn").onclick=closeModal;
 $("courseModal").addEventListener("click",e=>{if(e.target.id==="courseModal")closeModal()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&selectedCourseId)closeModal()});
+$("closeImageModalBtn").onclick=closeImageModal;
+$("imageModal").addEventListener("click",e=>{if(e.target.id==="imageModal")closeImageModal()});
+document.addEventListener("click",e=>{
+  const thumb=e.target.closest("[data-preview-image]");
+  if(!thumb)return;
+  e.preventDefault();
+  e.stopPropagation();
+  openImageModal(thumb.dataset.previewImage,thumb.dataset.previewTitle);
+},true);
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  if($("imageModal")?.classList.contains("open")){closeImageModal();return}
+  if(selectedCourseId)closeModal();
+});
 let activePickerId=null;
 let suppressPickerClick=false;
 function bindPickerCloseState(input){

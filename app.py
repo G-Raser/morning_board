@@ -16,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "morning_board.db"
 EXAM_DB_PATH = BASE_DIR / "exam_board.db"
 TELEGRAM_TEMPLATE_PATH = BASE_DIR / "telegram_message_templates.txt"
+ROLLOVER_TEMPLATE_PATH = BASE_DIR / "telegram_rollover_report_templates.txt"
 EXAM_IMAGE_DIR = BASE_DIR / "static" / "uploads" / "exam_evidence"
 ALLOWED_EXAM_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif"}
 app = Flask(__name__, static_folder="static", static_url_path="")
@@ -155,7 +156,9 @@ def init_db():
             "telegram_enabled": "0",
             "telegram_bot_token": "",
             "telegram_chat_id": "",
-            "telegram_last_sent_key": ""
+            "telegram_last_sent_key": "",
+            "rollover_report_enabled": "0",
+            "telegram_last_rollover_report_key": ""
         }
         for key, value in defaults.items():
             conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)", (key, value))
@@ -230,6 +233,7 @@ DEFAULT_TELEGRAM_TEMPLATE_FILE = """# Telegram 晚间提醒模板
 # {{today_done}} 会自动替换成今天完成事项列表。
 # {{tomorrow_ddl_section}} 会自动替换成完整 DDL 段落；如果明天没有 DDL，会自动消失。
 # 如果想改 DDL 段落本身，请改下面的 [ddl_section]。
+# 注意：模板标签只有单独一整行时才会被识别，写在注释里不会生效。
 
 [with_done]
 📅 {{date}}
@@ -271,19 +275,78 @@ DEFAULT_TELEGRAM_TEMPLATE_FILE = """# Telegram 晚间提醒模板
 [/ddl_section]
 """
 
-def ensure_telegram_template_file():
-    if not TELEGRAM_TEMPLATE_PATH.exists():
-        TELEGRAM_TEMPLATE_PATH.write_text(DEFAULT_TELEGRAM_TEMPLATE_FILE, encoding="utf-8")
+DEFAULT_ROLLOVER_TEMPLATE_FILE = """# Telegram 跨天转点报告模板
+# 触发时间跟“每日切换时间”一致，比如每日切换时间是 05:00，就在 05:00 发。
+# 你可以直接改这里的文案。
+# 建议保留这些占位符：{{date}}、{{new_day}}、{{report_window}}、{{day_start_time}}、{{today_done}}、{{tomorrow_ddl_section}}
+# {{date}} 是刚刚结束的应用日。
+# {{new_day}} 是刚刚开始的应用日。
+# {{report_window}} 是统计窗口。
+# {{day_start_time}} 是每日切换时间。
+# {{today_done}} 会自动替换成刚刚结束那一天的完成事项列表。
+# {{tomorrow_ddl_section}} 会自动替换成完整 DDL 段落；如果新一天没有 DDL，会自动消失。
+# 如果想改 DDL 段落本身，请改下面的 [rollover_ddl_section]。
+# 注意：模板标签只有单独一整行时才会被识别，写在注释里不会生效。
+
+[rollover_with_done]
+📅 {{date}}
+🌙 跨天转点报告时间到喵
+
+今天完成了这些：
+
+{{today_done}}
+
+主人好棒！这一天已经被好好收起来啦៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
+
+{{tomorrow_ddl_section}}
+
+新的一天从 {{day_start_time}} 开始。
+先把自己放稳，再处理最重要的事喵。
+[/rollover_with_done]
+
+[rollover_without_done]
+📅 {{date}}
+🌙 跨天转点报告时间到喵
+
+今天还没记录完成事项哦。
+没有也没关系，先把这一天收起来，明天再轻轻接上喵៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
+
+{{tomorrow_ddl_section}}
+
+新的一天从 {{day_start_time}} 开始。
+先看最该看的那一件就好喵。
+[/rollover_without_done]
+
+[rollover_ddl_section]
+这是新一天要留意的 DDL喵：
+
+{{tomorrow_ddl}}
+[/rollover_ddl_section]
+"""
+
+TELEGRAM_TEMPLATE_SECTION_NAMES = (
+    "with_done",
+    "without_done",
+    "ddl_section",
+)
+ROLLOVER_TEMPLATE_SECTION_NAMES = (
+    "rollover_with_done",
+    "rollover_without_done",
+    "rollover_ddl_section",
+)
 
 
-TEMPLATE_SECTION_TAG_RE = re.compile(r"^\s*\[(/?)(with_done|without_done|ddl_section)\]\s*$")
+def make_template_section_tag_re(section_names):
+    return re.compile(r"^\s*\[(/?)(" + "|".join(re.escape(name) for name in section_names) + r")\]\s*$")
 
-def parse_telegram_templates(raw_text):
+
+def parse_template_sections(raw_text, section_names):
+    tag_re = make_template_section_tag_re(section_names)
     templates = {}
     current_name = None
     current_lines = []
     for line in raw_text.splitlines():
-        tag_match = TEMPLATE_SECTION_TAG_RE.match(line)
+        tag_match = tag_re.match(line)
         if not tag_match:
             if current_name is not None:
                 current_lines.append(line)
@@ -302,19 +365,57 @@ def parse_telegram_templates(raw_text):
     return templates
 
 
-def get_telegram_templates():
-    ensure_telegram_template_file()
+def parse_telegram_templates(raw_text):
+    return parse_template_sections(raw_text, TELEGRAM_TEMPLATE_SECTION_NAMES)
+
+
+def parse_rollover_templates(raw_text):
+    return parse_template_sections(raw_text, ROLLOVER_TEMPLATE_SECTION_NAMES)
+
+
+def ensure_template_file(path, default_text):
+    if not path.exists():
+        path.write_text(default_text, encoding="utf-8")
+
+
+def load_templates(path, default_text, section_names, parser):
+    ensure_template_file(path, default_text)
     try:
-        raw_text = TELEGRAM_TEMPLATE_PATH.read_text(encoding="utf-8")
-        templates = parse_telegram_templates(raw_text)
+        raw_text = path.read_text(encoding="utf-8")
+        templates = parser(raw_text)
     except Exception:
         templates = {}
-    default_templates = parse_telegram_templates(DEFAULT_TELEGRAM_TEMPLATE_FILE)
-    if "with_done" not in templates or "without_done" not in templates:
-        templates = default_templates
-    if "ddl_section" not in templates:
-        templates["ddl_section"] = default_templates["ddl_section"]
+    default_templates = parser(default_text)
+    for name in section_names:
+        if name not in templates and name in default_templates:
+            templates[name] = default_templates[name]
     return templates
+
+
+def ensure_telegram_template_file():
+    ensure_template_file(TELEGRAM_TEMPLATE_PATH, DEFAULT_TELEGRAM_TEMPLATE_FILE)
+
+
+def ensure_rollover_template_file():
+    ensure_template_file(ROLLOVER_TEMPLATE_PATH, DEFAULT_ROLLOVER_TEMPLATE_FILE)
+
+
+def get_telegram_templates():
+    return load_templates(
+        TELEGRAM_TEMPLATE_PATH,
+        DEFAULT_TELEGRAM_TEMPLATE_FILE,
+        TELEGRAM_TEMPLATE_SECTION_NAMES,
+        parse_telegram_templates,
+    )
+
+
+def get_rollover_templates():
+    return load_templates(
+        ROLLOVER_TEMPLATE_PATH,
+        DEFAULT_ROLLOVER_TEMPLATE_FILE,
+        ROLLOVER_TEMPLATE_SECTION_NAMES,
+        parse_rollover_templates,
+    )
 
 
 def cleanup_telegram_message(text):
@@ -400,6 +501,54 @@ def build_telegram_reminder_message(conn, today):
     }
     return render_text_template(template, values)
 
+
+def day_start_label(conn=None):
+    hour = DEFAULT_DAY_START_HOUR
+    try:
+        if conn is not None:
+            settings = get_settings(conn)
+            hour = int(settings.get("day_start_hour", DEFAULT_DAY_START_HOUR))
+        else:
+            hour = get_day_start_hour()
+    except Exception:
+        hour = DEFAULT_DAY_START_HOUR
+    hour = max(0, min(23, hour))
+    return f"{hour:02d}:00"
+
+
+def rollover_report_date_for_now(now, day_start_hour):
+    return (now.date() - timedelta(days=1)).isoformat()
+
+
+def build_rollover_report_message(conn, report_date):
+    today_done, has_done = build_today_done_lines(conn, report_date)
+    tomorrow_ddl, has_ddl = build_tomorrow_ddl_lines(conn, report_date)
+    templates = get_rollover_templates()
+    template = templates["rollover_with_done"] if has_done else templates["rollover_without_done"]
+    new_day = tomorrow_date_str(report_date)
+    start_time = day_start_label(conn)
+    tomorrow_ddl_section = ""
+    if has_ddl:
+        tomorrow_ddl_section = render_text_template(
+            templates["rollover_ddl_section"],
+            {
+                "tomorrow_ddl": tomorrow_ddl,
+                "date": format_date_label(report_date),
+                "new_day": format_date_label(new_day),
+                "day_start_time": start_time,
+            }
+        )
+    values = {
+        "date": format_date_label(report_date),
+        "new_day": format_date_label(new_day),
+        "report_window": f"{report_date} {start_time} → {new_day} {start_time}",
+        "day_start_time": start_time,
+        "today_done": today_done,
+        "tomorrow_ddl": tomorrow_ddl,
+        "tomorrow_ddl_section": tomorrow_ddl_section,
+    }
+    return render_text_template(template, values)
+
 def telegram_reminder_loop():
     while True:
         try:
@@ -409,7 +558,8 @@ def telegram_reminder_loop():
             today = local_today_str()
             with get_conn() as conn:
                 settings = get_settings(conn)
-                if settings.get("reminder_enabled") == "1" and settings.get("telegram_enabled") == "1":
+                telegram_ready = settings.get("telegram_enabled") == "1"
+                if settings.get("reminder_enabled") == "1" and telegram_ready:
                     reminder_time = settings.get("reminder_time", "22:30")
                     target_minutes = minutes_from_hhmm(reminder_time)
                     if target_minutes is not None and 0 <= current_minutes - target_minutes <= 2:
@@ -424,6 +574,27 @@ def telegram_reminder_loop():
                             conn.execute(
                                 "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                                 ("telegram_last_sent_key", send_key)
+                            )
+                            conn.commit()
+                if settings.get("rollover_report_enabled") == "1" and telegram_ready:
+                    try:
+                        day_start_hour = max(0, min(23, int(settings.get("day_start_hour", DEFAULT_DAY_START_HOUR))))
+                    except Exception:
+                        day_start_hour = DEFAULT_DAY_START_HOUR
+                    rollover_minutes = day_start_hour * 60
+                    if 0 <= current_minutes - rollover_minutes <= 2:
+                        report_date = rollover_report_date_for_now(now, day_start_hour)
+                        send_key = f"rollover-{report_date}-{day_start_hour:02d}:00"
+                        if settings.get("telegram_last_rollover_report_key", "") != send_key:
+                            msg = build_rollover_report_message(conn, report_date)
+                            send_telegram_message(
+                                settings.get("telegram_bot_token", ""),
+                                settings.get("telegram_chat_id", ""),
+                                msg
+                            )
+                            conn.execute(
+                                "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                                ("telegram_last_rollover_report_key", send_key)
                             )
                             conn.commit()
         except Exception as e:
@@ -611,6 +782,7 @@ def state():
         "telegram_enabled": settings.get("telegram_enabled", "0"),
         "telegram_chat_id": settings.get("telegram_chat_id", ""),
         "telegram_has_token": "1" if settings.get("telegram_bot_token", "") else "0",
+        "rollover_report_enabled": settings.get("rollover_report_enabled", "0"),
         "theme": settings.get("theme", "light")
     })
 
@@ -1185,11 +1357,29 @@ def test_telegram():
         return jsonify({"error": str(e)}), 500
     return jsonify({"ok": True})
 
+@app.route("/api/telegram/test_rollover", methods=["POST"])
+def test_telegram_rollover():
+    init_db()
+    today = local_today_str()
+    with get_conn() as conn:
+        settings = get_settings(conn)
+        msg = build_rollover_report_message(conn, today)
+    token = settings.get("telegram_bot_token", "")
+    chat_id = settings.get("telegram_chat_id", "")
+    if not token or not chat_id:
+        return jsonify({"error": "telegram bot token or chat id is empty"}), 400
+    try:
+        send_telegram_message(token, chat_id, msg)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    return jsonify({"ok": True})
+
+
 @app.route("/api/settings", methods=["POST"])
 def update_settings():
     init_db()
     data = request.get_json(silent=True) or {}
-    allowed = {"focus", "reminder_enabled", "reminder_time", "theme", "day_start_hour", "telegram_enabled", "telegram_bot_token", "telegram_chat_id"}
+    allowed = {"focus", "reminder_enabled", "reminder_time", "theme", "day_start_hour", "telegram_enabled", "telegram_bot_token", "telegram_chat_id", "rollover_report_enabled"}
     with get_conn() as conn:
         for key, value in data.items():
             if key not in allowed:

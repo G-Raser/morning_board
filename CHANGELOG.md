@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.9.2
+
+- 统一 Exam Board 返回 Morning Board 按钮的 hover 动效，使其与首页“去 Exam Board 看复习进度”入口保持一致。
+- 返回按钮增加轻微阴影、上浮和深色模式边框细节。
+
+## v1.9.1
+
+- 优化 Exam Board 截图预览弹窗样式，改成更贴近图片本体的沉浸式预览。
+- 关闭按钮和文件名改为浮动控件，减少标题栏和空白区域对图片预览的干扰。
+- 保持与现有深色/浅色主题变量一致。
+
+## v1.9
+- Exam Board 截图支持在当前页面弹窗预览，点击遮罩 / 关闭按钮 / Esc 可关闭，不再新开页面。
+- 新增 Telegram 跨天转点报告，触发时间跟“每日切换时间”一致，适合把凌晨 5 点等自定义时间作为一天分界。
+- 跨天转点报告模板独立为 `telegram_rollover_report_templates.txt`，晚间提醒继续使用 `telegram_message_templates.txt`。
+- Telegram 模板解析规则收紧：只有单独一整行的 `[with_done]`、`[without_done]`、`[ddl_section]`、`[rollover_with_done]`、`[rollover_without_done]`、`[rollover_ddl_section]` 等标签会被识别，注释里的标签不会生效。
+- Telegram 设置区新增跨天转点报告开关和测试发送按钮。
+
 ## v1.8.17
 - Telegram 晚间提醒模板支持 `{{tomorrow_ddl_section}}`。
 - 明天没有 DDL 时，整段 DDL 提醒会自动隐藏，不再显示“暂时没有 DDL”。
@@ -23,6 +41,12 @@
 - 将 Exam Board 保存提示 toast 调整为和主页一致的屏幕中间下方样式。
 
 # Changelog
+
+## v1.9.1
+
+- 优化 Exam Board 截图预览弹窗样式，改成更贴近图片本体的沉浸式预览。
+- 关闭按钮和文件名改为浮动控件，减少标题栏和空白区域对图片预览的干扰。
+- 保持与现有深色/浅色主题变量一致。
 
 ## v1.8.9
 

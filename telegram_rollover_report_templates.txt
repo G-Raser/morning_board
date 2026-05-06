@@ -1,0 +1,48 @@
+# Telegram 跨天转点报告模板
+# 触发时间跟“每日切换时间”一致，比如每日切换时间是 05:00，就在 05:00 发。
+# 你可以直接改这里的文案。
+# 建议保留这些占位符：{{date}}、{{new_day}}、{{report_window}}、{{day_start_time}}、{{today_done}}、{{tomorrow_ddl_section}}
+# {{date}} 是刚刚结束的应用日。
+# {{new_day}} 是刚刚开始的应用日。
+# {{report_window}} 是统计窗口。
+# {{day_start_time}} 是每日切换时间。
+# {{today_done}} 会自动替换成刚刚结束那一天的完成事项列表。
+# {{tomorrow_ddl_section}} 会自动替换成完整 DDL 段落；如果新一天没有 DDL，会自动消失。
+# 如果想改 DDL 段落本身，请改下面的 [rollover_ddl_section]。
+# 注意：模板标签只有单独一整行时才会被识别，写在注释里不会生效。
+
+[rollover_with_done]
+📅 {{date}}
+🌙 跨天转点报告时间到喵
+
+今天完成了这些：
+
+{{today_done}}
+
+主人好棒！
+这一天已经被好好收起来啦៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
+
+{{tomorrow_ddl_section}}
+
+新的一天从 {{day_start_time}} 开始。
+先把自己放稳，再处理最重要的事喵。
+[/rollover_with_done]
+
+[rollover_without_done]
+📅 {{date}}
+🌙 跨天转点报告时间到喵
+
+今天还没记录完成事项哦。
+没有也没关系，先把这一天收起来，明天再轻轻接上喵៸៸᳐⦁⩊⦁៸៸᳐ ੭ﾞ❤
+
+{{tomorrow_ddl_section}}
+
+新的一天从 {{day_start_time}} 开始。
+先看最该看的那一件就好喵。
+[/rollover_without_done]
+
+[rollover_ddl_section]
+这是新一天要留意的 DDL喵：
+
+{{tomorrow_ddl}}
+[/rollover_ddl_section]

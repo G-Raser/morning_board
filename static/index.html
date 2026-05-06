@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.8.4</title>
+<title>醒来先看 v1.9.2</title>
 <script>
 (function(){
   try{
@@ -1166,6 +1166,7 @@ html.dark .exam-entry{
       <div class="telegram-topline">
         <label class="telegram-time-field">提醒时间<div class="input-picker time-picker"><input id="reminderTime" type="time"><button type="button" class="picker-btn" data-picker="reminderTime" aria-label="选择提醒时间">⏰</button></div></label>
         <label class="telegram-toggle"><input id="telegramEnabled" type="checkbox"><span>开启 Telegram 推送</span></label>
+        <label class="telegram-toggle"><input id="rolloverReportEnabled" type="checkbox"><span>开启跨天转点报告</span></label>
       </div>
       <div class="telegram-secretline">
         <input id="telegramChatId" placeholder="chat_id">
@@ -1173,7 +1174,8 @@ html.dark .exam-entry{
       </div>
       <div class="telegram-actions">
         <button id="saveTelegramBtn">保存提醒</button>
-        <button class="light" id="testTelegramBtn">测试 Telegram</button>
+        <button class="light" id="testTelegramBtn">测试晚间提醒</button>
+        <button class="light" id="testRolloverBtn">测试跨天报告</button>
       </div>
       <div class="notice" id="telegramTokenNote">还没有保存 token。</div>
     </div>
@@ -1375,6 +1377,7 @@ document.documentElement.classList.toggle("dark",state.theme==="dark");
 try{localStorage.setItem("morning-board-theme",state.theme||"light")}catch(e){}
 $("reminderTime").value=state.reminder_time||"22:30";
 $("telegramEnabled").checked=state.telegram_enabled==="1";
+$("rolloverReportEnabled").checked=state.rollover_report_enabled==="1";
 $("telegramChatId").value=state.telegram_chat_id||"";
 $("telegramBotToken").value="";
 $("telegramTokenNote").textContent=state.telegram_has_token==="1"?"Token 已保存。需要更换时再填新 token 喵。":"还没有保存 token。";
@@ -1421,6 +1424,7 @@ $("saveTelegramBtn").onclick=async()=>{
     reminder_enabled:$("telegramEnabled").checked?"1":"0",
     reminder_time:$("reminderTime").value||"22:30",
     telegram_enabled:$("telegramEnabled").checked?"1":"0",
+    rollover_report_enabled:$("rolloverReportEnabled").checked?"1":"0",
     telegram_chat_id:$("telegramChatId").value.trim()
   };
   const token=$("telegramBotToken").value.trim();
@@ -1431,9 +1435,17 @@ $("saveTelegramBtn").onclick=async()=>{
 $("testTelegramBtn").onclick=async()=>{
   try{
     await api("/api/telegram/test",{method:"POST",body:JSON.stringify({})});
-    showToast("Telegram 测试通知已发送喵");
+    showToast("Telegram 晚间提醒测试已发送喵");
   }catch(e){
     await openCatModal({title:"Telegram 测试失败",message:e.message,fields:[],okText:"知道了"});
+  }
+};
+$("testRolloverBtn").onclick=async()=>{
+  try{
+    await api("/api/telegram/test_rollover",{method:"POST",body:JSON.stringify({})});
+    showToast("Telegram 跨天报告测试已发送喵");
+  }catch(e){
+    await openCatModal({title:"跨天报告测试失败",message:e.message,fields:[],okText:"知道了"});
   }
 };
 
