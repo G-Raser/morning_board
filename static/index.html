@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.9.2</title>
+<title>醒来先看 v1.10</title>
 <script>
 (function(){
   try{
@@ -30,7 +30,7 @@ p{margin:6px 0;color:var(--muted)}
 .biggrid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
 .section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .kicker{font-size:13px;color:var(--muted);font-weight:650;letter-spacing:.02em}
-input,textarea,button{font:inherit;border-radius:14px;border:1px solid var(--line);padding:10px 12px}
+input,textarea,select,button{font:inherit;border-radius:14px;border:1px solid var(--line);padding:10px 12px}
 button{
   transition:background .18s ease,color .18s ease,border-color .18s ease,filter .18s ease,transform .12s ease,box-shadow .18s ease;
 }
@@ -66,7 +66,7 @@ button:not(:disabled):active{
     box-shadow:none;
   }
 }
-input,textarea{width:100%;background:var(--card2);color:var(--text)}
+input,textarea,select{width:100%;background:var(--card2);color:var(--text)}
 input[type=checkbox]{width:auto;transform:scale(1.16)}
 textarea{min-height:96px;resize:vertical;line-height:1.45}
 button{cursor:pointer;background:var(--accent);color:white;border:none;white-space:nowrap}
@@ -76,6 +76,18 @@ button.good{background:#166534;color:white}
 html.dark button.good{background:#15803d}
 ul{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
 li{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:17px;padding:12px;background:var(--card2)}
+.active-task{position:relative;overflow:hidden;--ddl-category-color:rgba(122,113,102,.36)}
+.active-task::after,.ddl-card::after{content:"";position:absolute;inset:-1px;border:2px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.82}
+.active-task.category-life,.ddl-card.category-life{--ddl-category-color:rgba(218,190,132,.58)}
+.active-task.category-study,.ddl-card.category-study{--ddl-category-color:rgba(166,91,178,.62)}
+html.dark .active-task.category-life,html.dark .ddl-card.category-life{--ddl-category-color:rgba(232,203,145,.68)}
+html.dark .active-task.category-study,html.dark .ddl-card.category-study{--ddl-category-color:rgba(180,91,190,.72)}
+.task-title-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.task-category-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:850;line-height:1;border:1px solid transparent}
+.task-category-pill.life{background:rgba(218,190,132,.14);color:#8a6a2f;border-color:rgba(218,190,132,.25)}
+.task-category-pill.study{background:rgba(166,91,178,.14);color:#7c3f89;border-color:rgba(166,91,178,.24)}
+html.dark .task-category-pill.life{background:rgba(232,203,145,.16);color:#ead3a0;border-color:rgba(232,203,145,.32)}
+html.dark .task-category-pill.study{background:rgba(180,91,190,.18);color:#e3b7ea;border-color:rgba(180,91,190,.30)}
 .task-main{min-width:0}.task-title{font-weight:700;word-break:break-word}.task-meta{font-size:13px;color:var(--muted);margin-top:4px}
 .badge{display:inline-block;border-radius:999px;padding:6px 10px;font-size:13px;white-space:nowrap}
 .ok{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.urgent{background:#ffedd5;color:#9a3412}.late{background:#fee2e2;color:#991b1b}.none{background:#f4f4f5;color:#52525b}
@@ -698,9 +710,10 @@ html.dark .thought-grid .thought-card{
 .bottom-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:18px;align-items:start}
 .bottom-grid>.card{min-width:0;width:100%}
 .ddl-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;align-items:stretch}
-.ddl-row input,.ddl-row .input-picker,.ddl-row button{min-height:48px}
+.ddl-row input,.ddl-row select,.ddl-row .input-picker,.ddl-row button{min-height:48px}
 .ddl-row .input-picker{width:100%;min-width:0}
-.ddl-row .task-title-input,.ddl-row .task-note-input{min-width:0;width:100%}
+.ddl-row .task-title-input,.ddl-row .task-note-input,.ddl-row .task-category-select{min-width:0;width:100%}
+.ddl-row .task-note-input{grid-column:1 / -1}
 .ddl-row .add-task-btn{grid-column:1 / -1;min-height:48px}
 @media(max-width:900px){
   .bottom-grid{grid-template-columns:1fr!important}
@@ -1142,6 +1155,10 @@ html.dark .exam-entry{
       <h3 style="margin-top:16px">新增 DDL</h3>
       <div class="ddl-row">
         <input id="taskTitle" class="task-title-input" placeholder="事项">
+        <select id="taskCategory" class="task-category-select" aria-label="DDL 类别">
+          <option value="life">生活相关</option>
+          <option value="study">学习相关</option>
+        </select>
         <div class="input-picker date-picker">
           <input id="taskDue" type="date" aria-label="截止日期">
           <button type="button" class="picker-btn" data-picker="taskDue" aria-label="选择截止日期">📅</button>
@@ -1276,6 +1293,9 @@ async function load(date){
   render();
 }
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function taskCategory(x){return x?.category==="study"?"study":"life"}
+function taskCategoryLabel(x){return taskCategory(x)==="study"?"学习相关":"生活相关"}
+function taskCategoryPill(x){const c=taskCategory(x);return `<span class="task-category-pill ${c}">${taskCategoryLabel(x)}</span>`}
 function empty(text){return `<li><div class="empty">${text}</div></li>`}
 function listDone(el,arr){
   el.classList.add("done-medals");
@@ -1341,11 +1361,15 @@ function listCompleted(el,arr){
     const mark=isExpired?"!":"✓";
     const chip=isExpired?"过期归档":"完成归档";
     const meta=[dueLabel(x), x.note?x.note:"", archiveMeta(x)].filter(Boolean).map(escapeHtml).join(" · ");
-    return `<li class="ddl-card ${cls}"><div class="ddl-mark">${mark}</div><div class="ddl-content"><div class="ddl-title-row"><span class="ddl-title">${escapeHtml(x.title)}</span><span class="ddl-chip">${chip}</span></div><div class="ddl-meta">${meta}</div></div><div class="ddl-actions">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
+    const category=taskCategory(x);
+    return `<li class="ddl-card ${cls} category-${category}"><div class="ddl-mark">${mark}</div><div class="ddl-content"><div class="ddl-title-row"><span class="ddl-title">${escapeHtml(x.title)}</span>${taskCategoryPill(x)}<span class="ddl-chip">${chip}</span></div><div class="ddl-meta">${meta}</div></div><div class="ddl-actions">${reactivateButton(x)}<button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
   }).join(""):`<li class="ddl-empty"><div class="empty">没有归档的 DDL。今天暂时没有旧怪尸体喵。</div></li>`;
 }
 function listActive(el,arr){
-  el.innerHTML=arr.length?arr.map(x=>`<li class="active-task" data-task-id="${x.id}"><div class="task-main"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`).join(""):empty("没有未完成 DDL。少一个怪，真好。")
+  el.innerHTML=arr.length?arr.map(x=>{
+    const category=taskCategory(x);
+    return `<li class="active-task category-${category}" data-task-id="${x.id}"><div class="task-main"><div class="task-title-row"><div class="task-title">${escapeHtml(x.title)}</div>${taskCategoryPill(x)}</div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}" data-edit-category="${category}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
+  }).join(""):empty("没有未完成 DDL。少一个怪，真好。")
 }
 let archiveReloading=false;
 function refreshCountdowns(){
@@ -1410,7 +1434,7 @@ $("addThoughtGroupBtn").onclick=async()=>{
   showToast("小感想气泡已建好喵");
 };
 
-$("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
+$("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,category:$("taskCategory").value||"life",due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskCategory").value="life";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();showToast("已保存给明天喵")};
 $("saveDayStartBtn").onclick=async()=>{
   const time=$("dayStartTime").value||"05:00";
@@ -1469,6 +1493,8 @@ async function askDueEdit(btn){
     message:"设错日期也没关系，猫猫帮你改喵。",
     defaultDate:oldDate||state?.today||boardTodayISO(),
     defaultTime:oldTime||"",
+    defaultCategory:btn.dataset.editCategory||"life",
+    includeCategory:true,
     allowClear:true
   });
 }
@@ -1497,6 +1523,10 @@ function openCatModal({title,message="",fields=[],okText="确定",cancelText="�
     if(f.type==="text"){
       return `<label>${escapeHtml(f.label||"")}<input id="${escapeHtml(f.id)}" type="${f.type}" value="${escapeHtml(f.value||"")}" ${f.required?"required":""}></label>`;
     }
+    if(f.type==="select"){
+      const options=(f.options||[]).map(opt=>`<option value="${escapeHtml(opt.value)}" ${opt.value===f.value?"selected":""}>${escapeHtml(opt.label)}</option>`).join("");
+      return `<label>${escapeHtml(f.label||"")}<select id="${escapeHtml(f.id)}">${options}</select></label>`;
+    }
     if(f.type==="checkbox"){
       return `<label style="display:flex;align-items:center;gap:8px"><input id="${escapeHtml(f.id)}" type="checkbox" ${f.checked?"checked":""} style="width:auto"> ${escapeHtml(f.label||"")}</label>`;
     }
@@ -1511,7 +1541,7 @@ function openCatModal({title,message="",fields=[],okText="确定",cancelText="�
 }
 function modalValues(){
   const values={};
-  $("catModalFields").querySelectorAll("input").forEach(input=>{
+  $("catModalFields").querySelectorAll("input,select").forEach(input=>{
     values[input.id]=input.type==="checkbox"?input.checked:input.value;
   });
   return values;
@@ -1526,17 +1556,21 @@ async function confirmCat({title,message,okText="确定",danger=false}){
   const result=await openCatModal({title,message,fields:[],okText,cancelText:"取消",danger});
   return result!==null;
 }
-async function askDueModal({title,message,defaultDate="",defaultTime="",allowClear=false}){
-  const fields=[
+async function askDueModal({title,message,defaultDate="",defaultTime="",defaultCategory="life",includeCategory=false,allowClear=false}){
+  const fields=[];
+  if(includeCategory){
+    fields.push({id:"modalTaskCategory",type:"select",label:"DDL 类别",value:defaultCategory||"life",options:[{value:"life",label:"生活相关"},{value:"study",label:"学习相关"}]});
+  }
+  fields.push(
     {id:"modalDueDate",type:"date",label:"截止日期",value:defaultDate||localISO(),required:!allowClear},
     {id:"modalDueTime",type:"time",label:"截止时间，可留空",value:defaultTime||""}
-  ];
+  );
   if(allowClear){
     fields.push({id:"modalClearDue",type:"checkbox",label:"清除这个任务的 DDL",checked:false});
   }
   const result=await openCatModal({title,message,fields,okText:"保存"});
   if(result===null)return null;
-  if(result.modalClearDue)return {due_date:null,due_time:null};
+  if(result.modalClearDue)return {due_date:null,due_time:null,category:includeCategory?(result.modalTaskCategory||"life"):undefined};
   const dateText=(result.modalDueDate||"").trim();
   const timeText=(result.modalDueTime||"").trim();
   if(!dateText){
@@ -1551,7 +1585,7 @@ async function askDueModal({title,message,defaultDate="",defaultTime="",allowCle
     await openCatModal({title:"时间格式不对喵",message:"请选择一个有效时间，或者留空。",fields:[],okText:"知道了"});
     return null;
   }
-  return {due_date:dateText,due_time:timeText||null};
+  return {due_date:dateText,due_time:timeText||null,category:includeCategory?(result.modalTaskCategory||"life"):undefined};
 }
 
 
@@ -1695,7 +1729,7 @@ async function copyTextWithFallback(text){
     setTimeout(()=>{$("copyText").focus();$("copyText").select()},50);
   }
 }
-$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`昨天的小感想（${state.yesterday}）：`,...thoughtGroupLines(state.yesterday_thought_groups||[]),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"",`今天的小感想（${state.today}）：`,...thoughtGroupLines(state.today_thought_groups||[]),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
+$("copyBtn").onclick=async()=>{const lines=[`【醒来先看】${state.today}`,"","昨天写给今天看的：",state.yesterday_note?.tomorrow_note?`- ${state.yesterday_note.tomorrow_note}`:"- 暂无","",`昨天完成（${state.yesterday}）：`,...(state.yesterday_done||[]).map(x=>`- ${x.text}`),"",`昨天的小感想（${state.yesterday}）：`,...thoughtGroupLines(state.yesterday_thought_groups||[]),"",`今天完成（${state.today}）：`,...(state.today_done||[]).map(x=>`- ${x.text}`),"",`今天的小感想（${state.today}）：`,...thoughtGroupLines(state.today_thought_groups||[]),"","还没归档的 DDL：",...(state.active_tasks||[]).map(x=>`- [${taskCategoryLabel(x)}] ${x.title} / ${dueLabel(x)} / ${urgencyText(x)}${x.note?" / "+x.note:""}`),"","写给明天：",state.today_note?.tomorrow_note?`- ${state.today_note.tomorrow_note}`:"- 暂无"];await copyTextWithFallback(lines.join("\n"))};
 $("todayDate").onchange=()=>load($("todayDate").value);
 
 function bindCopyModal(){

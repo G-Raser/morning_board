@@ -24,6 +24,17 @@ app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 CORS(app)
 
 DEFAULT_DAY_START_HOUR = 5
+TASK_CATEGORY_LABELS = {
+    "life": "生活相关",
+    "study": "学习相关"
+}
+
+def normalize_task_category(value, default="life"):
+    value = str(value or default).strip()
+    if value not in TASK_CATEGORY_LABELS:
+        return default
+    return value
+
 
 def local_now_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -110,6 +121,7 @@ def init_db():
                 due_date TEXT,
                 due_time TEXT,
                 note TEXT,
+                category TEXT NOT NULL DEFAULT 'life',
                 status TEXT NOT NULL DEFAULT 'active',
                 completed_at TEXT,
                 completed_date TEXT,
@@ -120,6 +132,7 @@ def init_db():
             )
         """)
         add_col(conn, "tasks", "due_time TEXT", "due_time")
+        add_col(conn, "tasks", "category TEXT NOT NULL DEFAULT 'life'", "category")
         add_col(conn, "tasks", "status TEXT NOT NULL DEFAULT 'active'", "status")
         add_col(conn, "tasks", "completed_at TEXT", "completed_at")
         add_col(conn, "tasks", "completed_date TEXT", "completed_date")
@@ -438,7 +451,7 @@ def get_today_done_items(conn, today):
         ORDER BY id DESC
     """, (today,)).fetchall()
     task_rows = conn.execute("""
-        SELECT title,due_date,due_time,archived_at
+        SELECT title,due_date,due_time,category,archived_at
         FROM tasks
         WHERE status='completed' AND archived_date=?
         ORDER BY archived_at DESC, id DESC
@@ -467,23 +480,34 @@ def build_today_done_lines(conn, today):
 def build_tomorrow_ddl_lines(conn, today):
     tomorrow = tomorrow_date_str(today)
     rows = conn.execute("""
-        SELECT title,due_date,due_time,note
+        SELECT title,due_date,due_time,note,category
         FROM tasks
         WHERE status='active' AND due_date=?
-        ORDER BY COALESCE(due_time,'23:59'), id
+        ORDER BY CASE category WHEN 'study' THEN 0 ELSE 1 END, COALESCE(due_time,'23:59'), id
     """, (tomorrow,)).fetchall()
     if not rows:
         return "", False
+    grouped = {"study": [], "life": []}
+    for row in rows:
+        category = normalize_task_category(row["category"], "life")
+        grouped.setdefault(category, []).append(row)
     lines = []
-    shown = rows[:8]
-    for row in shown:
-        time_label = row["due_time"] or "未设时间"
-        lines.append(f"- {time_label} · {row['title']}")
-    remaining = len(rows) - len(shown)
-    if remaining > 0:
+    shown_count = 0
+    for category in ("study", "life"):
+        group_rows = grouped.get(category, [])
+        if not group_rows:
+            continue
+        lines.append(f"{TASK_CATEGORY_LABELS[category]}：")
+        for row in group_rows[:8]:
+            time_label = row["due_time"] or "未设时间"
+            lines.append(f"- {time_label} · {row['title']}")
+            shown_count += 1
+        if len(group_rows) > 8:
+            lines.append(f"……{TASK_CATEGORY_LABELS[category]}还有 {len(group_rows) - 8} 个，打开 Morning Board 看完整列表。")
+    remaining = len(rows) - shown_count
+    if remaining > 0 and not any("打开 Morning Board" in line for line in lines):
         lines.append(f"……还有 {remaining} 个 DDL，打开 Morning Board 看完整列表。")
     return "\n".join(lines), True
-
 
 def build_telegram_reminder_message(conn, today):
     today_done, has_done = build_today_done_lines(conn, today)
@@ -748,14 +772,14 @@ def state():
         today_thought_groups = get_thought_groups(conn, today)
         yesterday_thought_groups = get_thought_groups(conn, yesterday)
         active_tasks = dicts(conn.execute(
-            "SELECT id,title,due_date,due_time,note,status,created_at FROM tasks WHERE status='active' ORDER BY COALESCE(due_date,'9999-99-99'), COALESCE(due_time,'23:59'), id"
+            "SELECT id,title,due_date,due_time,note,category,status,created_at FROM tasks WHERE status='active' ORDER BY COALESCE(due_date,'9999-99-99'), CASE category WHEN 'study' THEN 0 ELSE 1 END, COALESCE(due_time,'23:59'), id"
         ).fetchall())
         today_completed_tasks = dicts(conn.execute(
-            "SELECT id,title,due_date,due_time,note,status,completed_at,completed_date,archived_at,archived_date,archive_reason,created_at FROM tasks WHERE status IN ('completed','expired') AND archived_date=? ORDER BY archived_at DESC, id DESC",
+            "SELECT id,title,due_date,due_time,note,category,status,completed_at,completed_date,archived_at,archived_date,archive_reason,created_at FROM tasks WHERE status IN ('completed','expired') AND archived_date=? ORDER BY archived_at DESC, id DESC",
             (today,)
         ).fetchall())
         yesterday_completed_tasks = dicts(conn.execute(
-            "SELECT id,title,due_date,due_time,note,status,completed_at,completed_date,archived_at,archived_date,archive_reason,created_at FROM tasks WHERE status IN ('completed','expired') AND archived_date=? ORDER BY archived_at DESC, id DESC",
+            "SELECT id,title,due_date,due_time,note,category,status,completed_at,completed_date,archived_at,archived_date,archive_reason,created_at FROM tasks WHERE status IN ('completed','expired') AND archived_date=? ORDER BY archived_at DESC, id DESC",
             (yesterday,)
         ).fetchall())
         settings = get_settings(conn)
@@ -813,16 +837,17 @@ def add_task():
     due_date = data.get("due_date") or None
     due_time = data.get("due_time") or None
     note = data.get("note", "").strip()
+    category = normalize_task_category(data.get("category"), "life")
     now = local_now_str()
     if not title:
         return jsonify({"error": "title is required"}), 400
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO tasks(title,due_date,due_time,note,status,created_at) VALUES(?,?,?,?, 'active', ?)",
-            (title, due_date, due_time, note, now)
+            "INSERT INTO tasks(title,due_date,due_time,note,category,status,created_at) VALUES(?,?,?,?,?, 'active', ?)",
+            (title, due_date, due_time, note, category, now)
         )
         conn.commit()
-    return jsonify({"id": cur.lastrowid, "title": title, "due_date": due_date, "due_time": due_time, "note": note, "status": "active", "created_at": now}), 201
+    return jsonify({"id": cur.lastrowid, "title": title, "due_date": due_date, "due_time": due_time, "note": note, "category": category, "status": "active", "created_at": now}), 201
 
 @app.route("/api/tasks/<int:task_id>/complete", methods=["POST"])
 def complete_task(task_id):
@@ -876,17 +901,25 @@ def update_task_due(task_id):
     if due_time == "":
         due_time = None
     with get_conn() as conn:
-        row = conn.execute("SELECT id,status FROM tasks WHERE id=?", (task_id,)).fetchone()
+        row = conn.execute("SELECT id,status,category FROM tasks WHERE id=?", (task_id,)).fetchone()
         if not row:
             return jsonify({"error": "task not found"}), 404
         if row["status"] != "active":
             return jsonify({"error": "only active tasks can edit due date"}), 400
-        conn.execute(
-            "UPDATE tasks SET due_date=?, due_time=? WHERE id=?",
-            (due_date, due_time, task_id)
-        )
+        category = data.get("category", None)
+        if category is not None:
+            category = normalize_task_category(category, row["category"] or "life")
+            conn.execute(
+                "UPDATE tasks SET due_date=?, due_time=?, category=? WHERE id=?",
+                (due_date, due_time, category, task_id)
+            )
+        else:
+            conn.execute(
+                "UPDATE tasks SET due_date=?, due_time=? WHERE id=?",
+                (due_date, due_time, task_id)
+            )
         conn.commit()
-    return jsonify({"ok": True, "due_date": due_date, "due_time": due_time})
+    return jsonify({"ok": True, "due_date": due_date, "due_time": due_time, "category": data.get("category")})
 
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
@@ -1405,5 +1438,5 @@ if __name__ == "__main__":
     init_exam_db()
     start_background_scheduler()
     # app.run(host="127.0.0.1", port=5001, debug=True, use_reloader=False)
-    # app.run(host="100.97.142.99", port=5001, debug=True, use_reloader=False)
-    app.run(host="100.97.142.99", port=5000, debug=False, use_reloader=False)
+    app.run(host="100.97.142.99", port=5001, debug=True, use_reloader=False)
+    # app.run(host="100.97.142.99", port=5000, debug=False, use_reloader=False)

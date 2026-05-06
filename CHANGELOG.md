@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10
+
+- Morning Board DDL 新增手动分类：`生活相关` / `学习相关`。
+- 新增 DDL 时可以选择类别，修改 DDL 时也可以调整类别。
+- 未完成 DDL 和已归档 DDL 会显示类别标签，并使用贴合卡片边框的柔和彩色描边区分：生活相关偏蓝色，学习相关偏紫色。
+- Telegram 晚间提醒和跨天转点报告中的明日 DDL 会按类别分组显示。
+- 数据库 `tasks` 表新增 `category` 字段；旧 DDL 会默认归为 `生活相关`，可在页面里再手动修改。
+
 ## v1.9.2
 
 - 统一 Exam Board 返回 Morning Board 按钮的 hover 动效，使其与首页“去 Exam Board 看复习进度”入口保持一致。
