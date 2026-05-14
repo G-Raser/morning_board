@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10.8</title>
+<title>醒来先看 v1.10.10</title>
 <script>
 (function(){
   try{
@@ -1503,6 +1503,35 @@ $("addThoughtGroupBtn").onclick=async()=>{
 
 $("addTaskBtn").onclick=async()=>{const title=$("taskTitle").value.trim();if(!title)return;await api("/api/tasks",{method:"POST",body:JSON.stringify({title,category:$("taskCategory").value||"life",due_date:$("taskDue").value||null,due_time:$("taskTime").value||null,note:$("taskNote").value.trim()})});$("taskTitle").value="";$("taskCategory").value="life";$("taskDue").value="";$("taskTime").value="";$("taskNote").value="";await load();showToast("DDL 已添加喵")};
 $("saveNoteBtn").onclick=async()=>{await api("/api/notes",{method:"POST",body:JSON.stringify({note_date:$("todayDate").value,tomorrow_note:$("tomorrowNoteInput").value})});await load();showToast("已保存给明天喵")};
+function bindEnterSubmit(inputIds,buttonId){
+  const button=$(buttonId);
+  if(!button)return;
+  inputIds.forEach(id=>{
+    const input=$(id);
+    if(!input)return;
+    input.addEventListener("keydown",e=>{
+      if(e.key!=="Enter"||e.shiftKey||e.isComposing)return;
+      e.preventDefault();
+      button.click();
+    });
+  });
+}
+bindEnterSubmit(["doneInput"],"addDoneBtn");
+bindEnterSubmit(["thoughtEmojiInput"],"addThoughtGroupBtn");
+bindEnterSubmit(["taskTitle","taskNote"],"addTaskBtn");
+document.body.addEventListener("keydown",e=>{
+  const input=e.target.closest("[data-thought-item-input]");
+  if(!input||e.key!=="Enter"||e.shiftKey||e.isComposing)return;
+  e.preventDefault();
+  const groupId=input.dataset.thoughtItemInput;
+  document.querySelector(`[data-add-thought-item="${groupId}"]`)?.click();
+});
+$("tomorrowNoteInput")?.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&!e.isComposing){
+    e.preventDefault();
+    $("saveNoteBtn").click();
+  }
+});
 $("saveDayStartBtn").onclick=async()=>{
   const time=$("dayStartTime").value||"05:00";
   const hour=Number((time.split(":")[0]||"5"));

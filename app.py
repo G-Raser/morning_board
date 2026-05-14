@@ -739,7 +739,7 @@ def index():
 
 @app.route("/exams")
 def exams_page():
-    return send_from_directory("static", "exams.html")
+    return send_from_directory("static", "static/exams.html")
 
 @app.route("/api/state")
 def state():
