@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10.5</title>
+<title>醒来先看 v1.10.6</title>
 <script>
 (function(){
   try{
@@ -76,7 +76,7 @@ button.good{background:#166534;color:white}
 html.dark button.good{background:#15803d}
 ul{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
 li{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:17px;padding:12px;background:var(--card2)}
-.active-task{position:relative;overflow:hidden;--ddl-category-color:rgba(122,113,102,.36)}
+.active-task{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(132px,auto);align-items:center;gap:12px 18px;padding:16px 18px;--ddl-category-color:rgba(122,113,102,.36)}
 .active-task::after{content:"";position:absolute;inset:-1px;border:3px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.92}
 .ddl-card::after{content:"";position:absolute;inset:-1px;border:2px solid var(--ddl-category-color);border-radius:inherit;pointer-events:none;opacity:.82}
 .active-task.category-life,.ddl-card.category-life{--ddl-category-color:rgba(218,190,132,.58)}
@@ -90,11 +90,18 @@ html.dark .active-task.category-study,html.dark .ddl-card.category-study{--ddl-c
 .task-category-pill.study{background:rgba(174,153,184,.15);color:#6d5b76;border-color:rgba(174,153,184,.30)}
 html.dark .task-category-pill.life{background:rgba(232,203,145,.16);color:#ead3a0;border-color:rgba(232,203,145,.32)}
 html.dark .task-category-pill.study{background:rgba(190,166,202,.20);color:#e5d5ea;border-color:rgba(190,166,202,.36)}
-.task-main{min-width:0}.task-title{font-weight:700;word-break:break-word}.task-meta{font-size:13px;color:var(--muted);margin-top:4px}
+.task-main{min-width:0}.task-title{font-weight:700;font-size:18px;line-height:1.34;word-break:normal;overflow-wrap:break-word}.task-meta{font-size:13px;color:var(--muted);margin-top:4px}.task-meta-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}.task-meta-line .task-meta{margin-top:0}.active-task .countdown{display:inline-flex;align-items:center;width:max-content;max-width:100%;font-size:14px;padding:7px 12px}
 .badge{display:inline-block;border-radius:999px;padding:6px 10px;font-size:13px;white-space:nowrap}
 .ok{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.urgent{background:#ffedd5;color:#9a3412}.late{background:#fee2e2;color:#991b1b}.none{background:#f4f4f5;color:#52525b}
 html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a16;color:#fde68a}html.dark .urgent{background:#4a2812;color:#fdba74}html.dark .late{background:#4a2025;color:#fecaca}html.dark .none{background:#332f3a;color:#d4d4d8}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.muted{color:var(--muted);font-size:14px}.tiny{font-size:12px;color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.active-task .toolbar{grid-column:2;grid-row:1;display:grid;grid-template-columns:1fr;gap:10px;margin-top:0;align-self:center;justify-self:end;min-width:132px}.active-task .toolbar button{width:100%;padding:11px 14px}.active-task .progress-wrap{max-width:360px}
+@media(max-width:760px){
+  .active-task{grid-template-columns:1fr;align-items:stretch}
+  .active-task .toolbar{grid-column:auto;grid-row:auto;display:flex;flex-wrap:wrap;justify-self:start;min-width:0;width:100%}
+  .active-task .toolbar button{width:auto}
+  .active-task .progress-wrap{max-width:none}
+}
+.muted{color:var(--muted);font-size:14px}.tiny{font-size:12px;color:var(--muted)}
 .notice{background:var(--card2);border:1px dashed var(--line);border-radius:18px;padding:12px;color:var(--muted);font-size:14px}
 .panel-label{border-radius:999px;background:var(--accent2);padding:6px 10px;font-size:13px;color:var(--text)}
 .focus-box{border-left:5px solid var(--accent);background:var(--card2);padding:14px;border-radius:18px;color:var(--text)}
@@ -1414,7 +1421,7 @@ function listCompleted(el,arr){
 function listActive(el,arr){
   el.innerHTML=arr.length?arr.map(x=>{
     const category=taskCategory(x);
-    return `<li class="active-task category-${category}" data-task-id="${x.id}"><div class="task-main"><div class="task-title-row"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-category-line">${taskCategoryPill(x)}</div></div><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div>${progressHtml(x)}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}" data-edit-category="${category}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
+    return `<li class="active-task category-${category}" data-task-id="${x.id}"><div class="task-main"><div class="task-title-row"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-category-line">${taskCategoryPill(x)}</div></div><div class="task-meta-line"><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span></div>${progressHtml(x)}</div><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}" data-edit-category="${category}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
   }).join(""):empty("没有未完成 DDL。少一个怪，真好。")
 }
 let archiveReloading=false;
