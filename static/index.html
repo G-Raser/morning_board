@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10.7</title>
+<title>醒来先看 v1.10.8</title>
 <script>
 (function(){
   try{
@@ -95,10 +95,13 @@ html.dark .task-category-pill.study{background:rgba(190,166,202,.20);color:#e5d5
 .ok{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.urgent{background:#ffedd5;color:#9a3412}.late{background:#fee2e2;color:#991b1b}.none{background:#f4f4f5;color:#52525b}
 html.dark .ok{background:#12351e;color:#86efac}html.dark .soon{background:#453a16;color:#fde68a}html.dark .urgent{background:#4a2812;color:#fdba74}html.dark .late{background:#4a2025;color:#fecaca}html.dark .none{background:#332f3a;color:#d4d4d8}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.active-task .toolbar{grid-column:2;grid-row:1;display:grid;grid-template-columns:1fr;gap:10px;margin-top:0;align-self:center;justify-self:end;min-width:132px}.active-task .toolbar button{width:100%;padding:11px 14px}.active-task .progress-wrap{max-width:360px}
-.ddl-list-toggle-row{border:1px dashed var(--line);background:transparent;justify-content:center;align-items:center;flex-wrap:wrap;padding:10px 12px;gap:8px}
-.ddl-list-toggle-row .ddl-list-toggle{width:auto;border-radius:999px;padding:10px 14px;font-weight:750;box-shadow:0 10px 20px rgba(0,0,0,.08);transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
-.ddl-list-toggle-row .ddl-list-toggle:hover{transform:translateY(-1px);filter:brightness(1.04);box-shadow:0 14px 26px rgba(0,0,0,.12)}
-.ddl-list-toggle-row .tiny{font-size:12px}
+.ddl-list-toggle-row{border:0;background:transparent;justify-content:center;align-items:center;padding:6px 0 0}
+.ddl-list-toggle-row .ddl-list-toggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-height:38px;border-radius:999px;padding:9px 16px;font-size:14px;font-weight:800;border:1px solid rgba(214,180,140,.28);background:linear-gradient(135deg,rgba(214,180,140,.18),rgba(96,72,112,.13));color:var(--text);box-shadow:none}
+
+
+.ddl-list-toggle-row .ddl-list-toggle:hover{transform:translateY(-1px);filter:brightness(1.04);box-shadow:0 10px 20px rgba(0,0,0,.08)}
+html.dark .ddl-list-toggle-row .ddl-list-toggle{border-color:rgba(232,203,145,.24);background:linear-gradient(135deg,rgba(232,203,145,.14),rgba(96,72,112,.22))}
+@media(max-width:760px){.ddl-list-toggle-row{padding-top:4px}.ddl-list-toggle-row .ddl-list-toggle{width:100%}}
 @media(max-width:760px){
   .active-task{grid-template-columns:1fr;align-items:stretch}
   .active-task .toolbar{grid-column:auto;grid-row:auto;display:flex;flex-wrap:wrap;justify-self:start;min-width:0;width:100%}
@@ -1274,7 +1277,7 @@ html.dark .exam-entry{
 
 <script>
 const $=id=>document.getElementById(id);let state={};
-const ACTIVE_TASK_PREVIEW_LIMIT=4;
+const DDL_COLLAPSE_LIMIT=4;
 let activeTasksExpanded=false;
 const openThoughtGroups=new Set();
 function dateToISO(d=new Date()){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
@@ -1425,14 +1428,14 @@ function listCompleted(el,arr){
   }).join(""):`<li class="ddl-empty"><div class="empty">没有归档的 DDL。今天暂时没有旧怪尸体喵。</div></li>`;
 }
 function listActive(el,arr){
-  if(arr.length<=ACTIVE_TASK_PREVIEW_LIMIT)activeTasksExpanded=false;
-  const visible=activeTasksExpanded?arr:arr.slice(0,ACTIVE_TASK_PREVIEW_LIMIT);
+  if(arr.length<=DDL_COLLAPSE_LIMIT)activeTasksExpanded=false;
+  const visible=activeTasksExpanded?arr:arr.slice(0,DDL_COLLAPSE_LIMIT);
   const items=visible.map(x=>{
     const category=taskCategory(x);
     return `<li class="active-task category-${category}" data-task-id="${x.id}"><div class="task-main"><div class="task-title-row"><div class="task-title">${escapeHtml(x.title)}</div><div class="task-category-line">${taskCategoryPill(x)}</div></div><div class="task-meta-line"><div class="task-meta">${escapeHtml(dueLabel(x))}${x.note?" · "+escapeHtml(x.note):""}</div><span class="${badgeClass(x)} countdown">${urgencyText(x)}</span></div>${progressHtml(x)}</div><div class="toolbar"><button class="good" data-complete-task="${x.id}">今天完成</button><button class="light" data-edit-due-task="${x.id}" data-edit-title="${escapeHtml(x.title)}" data-edit-due-date="${escapeHtml(x.due_date||"")}" data-edit-due-time="${escapeHtml(x.due_time||"")}" data-edit-category="${category}">修改 DDL</button><button class="danger" data-delete-task="${x.id}">彻底删除</button></div></li>`;
   }).join("");
-  const hiddenCount=Math.max(0,arr.length-ACTIVE_TASK_PREVIEW_LIMIT);
-  const toggle=arr.length>ACTIVE_TASK_PREVIEW_LIMIT?`<li class="ddl-list-toggle-row"><button type="button" class="light ddl-list-toggle" data-toggle-active-tasks="1">${activeTasksExpanded?`收起，只看最近 ${ACTIVE_TASK_PREVIEW_LIMIT} 条`:`展开全部 ${arr.length} 条 DDL`}</button><span class="tiny">${activeTasksExpanded?`当前显示全部 ${arr.length} 条`:`还有 ${hiddenCount} 条已收起`}</span></li>`:"";
+  const hiddenCount=Math.max(0,arr.length-DDL_COLLAPSE_LIMIT);
+  const toggle=arr.length>DDL_COLLAPSE_LIMIT?`<li class="ddl-list-toggle-row"><button type="button" class="light ddl-list-toggle ${activeTasksExpanded?"is-expanded":""}" data-toggle-active-tasks="1" aria-expanded="${activeTasksExpanded?"true":"false"}">${activeTasksExpanded?`收起 DDL，只看最近 ${DDL_COLLAPSE_LIMIT} 条`:`查看更多 DDL（还有 ${hiddenCount} 条）`}</button></li>`:"";
   el.innerHTML=arr.length?items+toggle:empty("没有未完成 DDL。少一个怪，真好。")
 }
 let archiveReloading=false;
