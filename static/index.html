@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10.2</title>
+<title>醒来先看 v1.10.5</title>
 <script>
 (function(){
   try{
@@ -755,10 +755,24 @@ html.dark .thought-grid .thought-card{
 @media(max-width:560px){
   .ddl-row{grid-template-columns:1fr}
 }
-.today-date-picker{max-width:420px;width:100%}
+.today-date-picker{max-width:none;width:100%;min-width:0}
 .today-date-picker input{font-size:18px;font-variant-numeric:tabular-nums}
-@media(max-width:560px){
-  .today-date-picker{max-width:none}
+.hero .topbar>div:first-child{min-width:260px;flex:1 1 360px}
+.hero .topbar>.row{flex:1 1 600px;max-width:660px;min-width:0;flex-wrap:wrap;justify-content:flex-end;align-items:end}
+.hero .topbar>.row>label{flex:1 1 280px;min-width:260px;max-width:340px}
+.hero .topbar>.row>button{flex:0 0 auto}
+@media(max-width:900px){
+  .hero .topbar{align-items:stretch}
+  .hero .topbar>.row{width:100%;max-width:none;justify-content:flex-start}
+  .hero .topbar>.row>label{flex:1 1 100%;max-width:none}
+  .hero .topbar>.row>button{flex:1 1 calc(33.333% - 8px)}
+}
+@media(max-width:520px){
+  .hero .topbar>.row>button{flex:1 1 100%}
+}
+@media(pointer:coarse){
+  .input-picker .picker-btn{pointer-events:none}
+  .input-picker input{padding-right:50px}
 }
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:999px;padding:12px 18px;box-shadow:var(--shadow);opacity:0;pointer-events:none;z-index:99999;transition:opacity .22s ease,transform .22s ease;font-weight:700}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1279,22 +1293,20 @@ function daysUntilTask(t){
   const current=new Date(cy,cm-1,cd);
   return Math.floor((target-current)/86400000);
 }
+function durationText(totalMinutes){
+  const mins=Math.max(0,totalMinutes);
+  const days=Math.floor(mins/1440);
+  const hours=Math.floor((mins%1440)/60);
+  const minutes=mins%60;
+  if(days>0)return`${days}天 ${hours}小时 ${minutes}分钟`;
+  if(hours>0)return`${hours}小时 ${minutes}分钟`;
+  return`${minutes}分钟`;
+}
 function urgencyText(t){
   const target=dueDateObj(t);if(!target)return"未定";
-  const now=new Date();const diff=target-now;
-  const mins=Math.round(diff/60000);
-  const days=daysUntilTask(t);
-  if(mins<0){
-    const overdue=Math.abs(mins);
-    if(overdue<60)return`已过期 ${overdue} 分钟`;
-    if(overdue<1440)return`已过期 ${Math.floor(overdue/60)}小时${overdue%60?` ${overdue%60}分钟`:""}`;
-    return`已过期 ${Math.ceil(overdue/1440)} 天`;
-  }
-  if(mins<60)return`${mins} 分钟后`;
-  if(mins<1440)return`${Math.floor(mins/60)}小时${mins%60?` ${mins%60}分钟`:"后"}`;
-  if(days===0)return t.due_time?`今天 ${t.due_time} 截止`:"今天截止";
-  if(days===1)return t.due_time?`明天 ${t.due_time} 截止`:"明天截止";
-  return`${days} 天后`;
+  const diff=target-new Date();
+  if(diff<=0)return"已过期";
+  return`还有 ${durationText(Math.ceil(diff/60000))}`;
 }
 function badgeClass(t){const target=dueDateObj(t);if(!target)return"badge none";const mins=Math.round((target-new Date())/60000);if(mins<0)return"badge late";if(mins<=1440)return"badge urgent";if(mins<=4320)return"badge soon";return"badge ok"};
 function parseLocalDateTime(s){
@@ -1410,7 +1422,7 @@ function refreshCountdowns(){
   if(!state?.active_tasks)return;
   for(const task of state.active_tasks){
     const target=dueDateObj(task);
-    if(target && target<new Date() && !archiveReloading){
+    if(target && target<=new Date() && !archiveReloading){
       archiveReloading=true;
       load($("todayDate").value).finally(()=>archiveReloading=false);
       return;
@@ -1867,7 +1879,7 @@ document.addEventListener("click",e=>{
 window.addEventListener("DOMContentLoaded",()=>{
   bindCatModal();
   load("").catch(err=>alert("加载失败："+err.message));
-  setInterval(refreshCountdowns,1000);
+  setInterval(refreshCountdowns,60000);
 });
 </script>
 
