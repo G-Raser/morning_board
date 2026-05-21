@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>醒来先看 v1.10.10</title>
+<title>醒来先看 v1.10.11</title>
 <script>
 (function(){
   try{
@@ -787,6 +787,25 @@ html.dark .thought-grid .thought-card{
 @media(pointer:coarse){
   .input-picker .picker-btn{pointer-events:none}
   .input-picker input{padding-right:50px}
+}
+
+@media(max-width:640px){
+  body{padding:14px 10px}
+  .wrap{max-width:100%;overflow-x:hidden}
+  .card{padding:18px 16px;border-radius:24px}
+  .hero .topbar{display:grid;grid-template-columns:1fr;gap:16px;align-items:stretch}
+  .hero .topbar>div:first-child{min-width:0;width:100%;flex:none}
+  .hero .topbar>.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;width:100%;max-width:none;min-width:0;margin-top:0;justify-content:stretch;align-items:stretch;overflow:visible}
+  .hero .topbar>.row>label{grid-column:1 / -1;min-width:0;max-width:none;width:100%;flex:none}
+  .hero .topbar>.row>button{width:100%;min-height:48px;flex:none}
+  .hero .topbar>.row>button:nth-of-type(3){grid-column:1 / -1}
+  .today-date-picker{min-width:0;width:100%}
+  .today-date-picker input{font-size:17px;min-height:52px}
+  .today-date-picker .picker-btn{right:10px}
+}
+@media(max-width:380px){
+  .hero .topbar>.row{grid-template-columns:1fr}
+  .hero .topbar>.row>button{grid-column:1 / -1}
 }
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:999px;padding:12px 18px;box-shadow:var(--shadow);opacity:0;pointer-events:none;z-index:99999;transition:opacity .22s ease,transform .22s ease;font-weight:700}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
