@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exam Board v1.10.11</title>
+<title>Exam Board v1.10.12</title>
 <script>
 (function(){
   try{
@@ -39,6 +39,10 @@ textarea{min-height:84px;resize:vertical;line-height:1.5}
 label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:750}
 .form-grid{display:grid;grid-template-columns:1fr 1.4fr 220px auto;gap:10px;align-items:end}
 .course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.archive-section{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);display:grid;gap:12px}
+.archive-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.archive-head p{margin:3px 0 0}
+.archive-count{color:var(--muted);font-size:13px;font-weight:800}
 .course-card{position:relative;display:grid;gap:12px;background:var(--card2);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:0 8px 20px rgba(70,45,20,.06);overflow:hidden}
 .course-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:rgba(224,196,143,.55)}
 .course-card.calm::before{background:rgba(112,153,87,.55)}
@@ -142,6 +146,16 @@ html.dark .toast{background:#2b2533}
       <button class="light" id="refreshBtn">刷新倒计时</button>
     </div>
     <div id="courseList" class="course-grid"></div>
+    <div id="examArchiveWrap" class="archive-section" hidden>
+      <div class="archive-head">
+        <div>
+          <h3>已结束考试归档</h3>
+          <p>已经结束的考试先收在这里，不占上方复习面板。</p>
+        </div>
+        <div id="examArchiveCount" class="archive-count"></div>
+      </div>
+      <div id="archivedCourseList" class="course-grid"></div>
+    </div>
   </section>
   <section class="card">
     <h2>使用方式</h2>
@@ -229,8 +243,20 @@ function makePastedFile(file){
 async function load(){state=await api("/api/exams");render()}
 function render(){
   const list=$("courseList");
+  const archiveWrap=$("examArchiveWrap");
+  const archiveList=$("archivedCourseList");
+  const archiveCount=$("examArchiveCount");
   const courses=state.courses||[];
-  list.innerHTML=courses.length?courses.map(courseHtml).join(""):`<div class="empty">还没有课程。先加一门，考试作战室就开张喵。</div>`;
+  const activeCourses=courses.filter(c=>c.urgency!=="past");
+  const archivedCourses=courses.filter(c=>c.urgency==="past");
+  if(!courses.length){
+    list.innerHTML=`<div class="empty">还没有课程。先加一门，考试作战室就开张喵。</div>`;
+  }else{
+    list.innerHTML=activeCourses.length?activeCourses.map(courseHtml).join(""):`<div class="empty">目前没有进行中的考试。已结束的会收在下方归档区。</div>`;
+  }
+  archiveWrap.hidden=!archivedCourses.length;
+  archiveList.innerHTML=archivedCourses.map(courseHtml).join("");
+  archiveCount.textContent=archivedCourses.length?`共 ${archivedCourses.length} 门已结束`:"";
   renderModal();
 }
 function courseHtml(c){
